@@ -98,28 +98,32 @@
         </div>
       </section>
 
-      <!-- 3. 香港漁獲圖鑑 (修復圖片顯示) -->
+      <!-- 3. 香港漁獲圖鑑 -->
       <section v-show="currentTab === 'fish'" class="space-y-6">
-        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
-          <div class="flex items-center space-x-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 max-w-md">
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col md:flex-row justify-between items-center gap-4">
+          <div class="flex items-center space-x-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 w-full md:max-w-md">
             <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-            <input v-model="fishSearchQuery" type="text" placeholder="搜尋全港漁獲（黑立、黃腳立、泥鯭）..." class="bg-transparent text-sm focus:outline-none w-full text-white">
+            <input v-model="fishSearchQuery" type="text" placeholder="搜尋全港漁獲（例如：黑立、黃腳立、泥鯭）..." class="bg-transparent text-sm focus:outline-none w-full text-white">
+          </div>
+          <div class="text-xs text-slate-400">
+            資料庫總計: <span class="text-cyan-400 font-bold">{{ fishes.length }}</span> 種 
+            <span class="ml-2">(當前顯示前 {{ filteredFishes.length }} 筆)</span>
           </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          <div v-for="fish in filteredFishes" :key="fish.id" class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:border-cyan-500/50 transition">
-            <div class="relative h-48 bg-slate-950 overflow-hidden flex items-center justify-center">
+          <div v-for="fish in filteredFishes" :key="fish.id" class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:border-cyan-500/50 transition flex flex-col">
+            <div class="relative h-48 bg-slate-950 overflow-hidden flex items-center justify-center shrink-0">
               <img :src="fish.image" 
                    :alt="fish.name" 
                    referrerpolicy="no-referrer"
                    @error="handleImgError"
-                   class="max-h-full max-w-full object-cover w-full h-full">
+                   class="object-cover w-full h-full">
               <span v-if="fish.toxic" class="absolute top-2 right-2 bg-rose-500/80 text-white text-[10px] font-bold px-2 py-0.5 rounded backdrop-blur">
                 ⚠️ 毒棘警告
               </span>
             </div>
-            <div class="p-4 space-y-2">
+            <div class="p-4 space-y-2 flex-grow">
               <div class="flex justify-between items-baseline">
                 <h4 class="font-bold text-lg text-white">{{ fish.name }}</h4>
                 <span class="text-xs text-slate-400">放生: &lt; {{ fish.releaseSize }}</span>
@@ -208,19 +212,39 @@
           { id: 2, name: '西環鐘聲泳棚', region: '港島', type: '磯釣', lat: 22.2825, lng: 114.1165, score: 8.5, desc: '水深流急，多石斑與黃腳立。' }
         ]);
 
-        // 換用無防盜連限制的圖庫
-        const fishes = ref([
-          { id: 1, name: '黑棘鯛', localName: '黑立 / 黑鯛', toxic: false, releaseSize: '15 cm', desc: '全港沿岸常見，警覺性高，精於吃餌。', image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?w=600&auto=format&fit=crop&q=80' },
-          { id: 2, name: '黃腳鯛', localName: '黃腳立', toxic: false, releaseSize: '15 cm', desc: '腹鰭與臀鰭呈黃色，肉質鮮美。', image: 'https://images.unsplash.com/photo-1524704685771-adad009cda2f?w=600&auto=format&fit=crop&q=80' },
-          { id: 3, name: '斜帶石斑魚', localName: '青斑', toxic: false, releaseSize: '25 cm', desc: '中鉤後會迅速洗穴鑽洞，需硬竿拉頭。', image: 'https://images.unsplash.com/photo-1535591273668-578e31182c4f?w=600&auto=format&fit=crop&q=80' },
-          { id: 4, name: '褐籃子魚', localName: '泥鯭', toxic: true, releaseSize: '10 cm', desc: '鰭棘劇毒，被刺中會劇痛。', image: 'https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?w=600&auto=format&fit=crop&q=80' }
-        ]);
+        const fishes = ref([]);
 
+        // 搜尋過濾，並限制最多顯示 50 筆以保持網頁效能
         const filteredSpots = computed(() => spots.value.filter(s => s.name.includes(searchQuery.value)));
-        const filteredFishes = computed(() => fishes.value.filter(f => f.name.includes(fishSearchQuery.value) || f.localName.includes(fishSearchQuery.value)));
+        const filteredFishes = computed(() => {
+          const query = fishSearchQuery.value.trim().toLowerCase();
+          let result = fishes.value;
+          if (query) {
+            result = result.filter(f => 
+              f.name.toLowerCase().includes(query) || 
+              f.localName.toLowerCase().includes(query) ||
+              (f.category && f.category.toLowerCase().includes(query))
+            );
+          }
+          return result.slice(0, 50);
+        });
+
+        // 從外部 JSON 檔案讀取圖鑑資料
+        const loadFishDatabase = async () => {
+          try {
+            const res = await fetch('/fish-data.json');
+            if (res.ok) {
+              fishes.value = await res.json();
+            } else {
+              console.warn("未能載入 fish-data.json");
+            }
+          } catch (err) {
+            console.error("圖鑑資料載入失敗:", err);
+          }
+        };
 
         const handleImgError = (e) => {
-          e.target.src = 'https://placehold.co/600x400/0f172a/38bdf8?text=Fish+Image';
+          e.target.src = 'https://placehold.co/600x400/0f172a/38bdf8?text=Image+Not+Found';
         };
 
         const handleFileUpload = (e) => {
@@ -275,10 +299,16 @@
 
         onMounted(() => {
           fetchTideData();
+          loadFishDatabase();
           setTimeout(() => initMap(), 300);
         });
 
-        return { currentTab, searchQuery, fishSearchQuery, spots, filteredSpots, fishes, filteredFishes, focusSpot, tideList, fetchTideData, fileInput, selectedFile, previewImage, isAnalyzing, aiResult, handleFileUpload, analyzeFish, handleImgError };
+        return { 
+          currentTab, searchQuery, fishSearchQuery, spots, filteredSpots, 
+          fishes, filteredFishes, focusSpot, tideList, fetchTideData, 
+          fileInput, selectedFile, previewImage, isAnalyzing, aiResult, 
+          handleFileUpload, analyzeFish, handleImgError 
+        };
       }
     }).mount('#app');
   </script>
