@@ -7,7 +7,6 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-  <!-- Leaflet 地圖套件 -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 </head>
@@ -24,7 +23,7 @@
           </span>
         </div>
         
-        <nav class="hidden md:flex space-x-6 text-sm font-medium">
+        <nav class="flex space-x-6 text-sm font-medium">
           <button @click="currentTab = 'map'" :class="currentTab==='map'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">釣點地圖</button>
           <button @click="currentTab = 'tide'" :class="currentTab==='tide'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">天文台潮汐</button>
           <button @click="currentTab = 'ai'" :class="currentTab==='ai'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">AI 魚種辨識</button>
@@ -39,25 +38,17 @@
     <!-- 主要內容區 -->
     <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
 
-      <!-- Step 1-1: 互動式釣點地圖區塊 -->
+      <!-- 1. 釣點地圖 -->
       <section v-show="currentTab === 'map'" class="space-y-4">
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-wrap gap-3 items-center justify-between">
           <div class="flex items-center space-x-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 flex-1 max-w-md">
             <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-            <input v-model="searchQuery" type="text" placeholder="搜尋釣點（例如：西貢、青衣大橋、東龍島）..." class="bg-transparent text-sm focus:outline-none w-full text-white">
-          </div>
-          <div class="flex gap-2">
-            <button @click="selectedType = 'ALL'" :class="selectedType==='ALL'?'bg-cyan-500 text-slate-900':'bg-slate-700 text-slate-300'" class="px-3 py-1.5 rounded-lg text-xs font-bold">全部</button>
-            <button @click="selectedType = '磯釣'" :class="selectedType==='磯釣'?'bg-cyan-500 text-slate-900':'bg-slate-700 text-slate-300'" class="px-3 py-1.5 rounded-lg text-xs font-bold">磯釣/岸釣</button>
-            <button @click="selectedType = '船釣'" :class="selectedType==='船釣'?'bg-cyan-500 text-slate-900':'bg-slate-700 text-slate-300'" class="px-3 py-1.5 rounded-lg text-xs font-bold">魚排/船釣</button>
+            <input v-model="searchQuery" type="text" placeholder="搜尋釣點（西貢、青衣、東龍島）..." class="bg-transparent text-sm focus:outline-none w-full text-white">
           </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <!-- Leaflet 地圖掛載區 -->
           <div class="lg:col-span-2 bg-slate-800 h-[500px] rounded-xl border border-slate-700 overflow-hidden relative z-0" id="map-container"></div>
-
-          <!-- 釣點清單列表 -->
           <div class="space-y-3 overflow-y-auto max-h-[500px] pr-1">
             <div v-for="spot in filteredSpots" :key="spot.id" @click="focusSpot(spot)" class="bg-slate-800 p-4 rounded-xl border border-slate-700 hover:border-cyan-500/50 cursor-pointer transition">
               <div class="flex justify-between items-start">
@@ -70,19 +61,54 @@
                 </span>
               </div>
               <p class="text-xs text-slate-300 mt-2">{{ spot.desc }}</p>
-              <div class="mt-3 flex items-center justify-between text-xs text-slate-400 border-t border-slate-700/50 pt-2">
-                <span><i class="fa-solid fa-fish text-amber-400 mr-1"></i>主攻：{{ spot.fish }}</span>
-                <span class="text-cyan-400 font-medium">查看詳情 →</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. 天文台潮汐 -->
+      <section v-show="currentTab === 'tide'" class="space-y-6">
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+          <div class="flex justify-between items-center mb-6">
+            <div>
+              <h3 class="text-xl font-bold">香港即時潮汐預報（天文台數據）</h3>
+              <p class="text-xs text-slate-400 mt-1">數據將自動同步香港天文台 API，為釣友提供高潮、低潮及咬口時間點。</p>
+            </div>
+            <button @click="fetchTideData" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">
+              <i class="fa-solid fa-rotate mr-1"></i> 重新整理
+            </button>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div v-for="(tide, idx) in tideList" :key="idx" class="bg-slate-900/80 p-4 rounded-xl border border-slate-700 relative overflow-hidden">
+              <div class="flex justify-between items-start">
+                <span class="text-xs text-slate-400"><i class="fa-solid fa-clock mr-1"></i>時間 {{ tide.time }}</span>
+                <span :class="tide.biteScore >= 8 ? 'bg-amber-500/20 text-amber-400 border-amber-500/30' : 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'" class="text-xs font-bold px-2 py-0.5 rounded border">
+                  咬口指數 {{ tide.biteScore }}/10
+                </span>
+              </div>
+              <div class="mt-3">
+                <div class="text-2xl font-bold text-cyan-400">{{ tide.height }} {{ tide.unit }}</div>
+                <div class="text-xs font-medium text-slate-300 mt-1">{{ tide.status }}</div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- Step 1-2: 潮汐展示 -->
-      <section v-show="currentTab === 'tide'" class="bg-slate-800 p-6 rounded-xl border border-slate-700">
-        <h3 class="text-xl font-bold mb-4">香港即時潮汐預報 (天文台數據)</h3>
-        <p class="text-slate-400 text-sm">數據將自動同步香港天文台 API，為釣友提供高潮、低潮及咬口時間點。</p>
+      <!-- 3. AI 魚種辨識 -->
+      <section v-show="currentTab === 'ai'" class="space-y-6">
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 max-w-2xl mx-auto text-center space-y-4">
+          <i class="fa-solid fa-wand-magic-sparkles text-4xl text-cyan-400"></i>
+          <h3 class="text-xl font-bold">AI 香港魚種即時辨識</h3>
+          <p class="text-xs text-slate-400">上傳上鉤魚隻照片，AI 即時解析名稱、毒性警告與食用建議。</p>
+          
+          <div class="border-2 border-dashed border-slate-600 p-8 rounded-xl bg-slate-900/50 hover:border-cyan-500 transition cursor-pointer">
+            <i class="fa-solid fa-cloud-arrow-up text-3xl text-slate-400 mb-2"></i>
+            <p class="text-sm font-medium">點擊或拖曳照片至此上傳</p>
+            <p class="text-xs text-slate-500 mt-1">支援 JPG, PNG 格式</p>
+          </div>
+        </div>
       </section>
 
     </main>
@@ -93,56 +119,52 @@
 
     createApp({
       setup() {
-        const currentTab = ref('map');
+        const currentTab = ref('tide');
         const searchQuery = ref('');
-        const selectedType = ref('ALL');
+        const tideList = ref([]);
         let map = null;
-        let markers = [];
 
         const spots = ref([
-          { id: 1, name: '西貢北潭涌/碼頭', region: '西貢', type: '磯釣', lat: 22.3965, lng: 114.3182, score: 9.2, fish: '黑臘、黃腳立', desc: '水質極佳，適合波釣法，潮水動時咬口旺。' },
-          { id: 2, name: '青衣大橋海濱', region: '葵青', type: '磯釣', lat: 22.3551, lng: 114.1102, score: 8.5, fish: '石斑、鱸魚', desc: '水深流急，夜釣熱點，交通便利。' },
-          { id: 3, name: '果洲群島', region: '外島', type: '船釣', lat: 22.2667, lng: 114.3667, score: 9.6, fish: '白立、紅鮪', desc: '專業磯釣/艇釣大物場，水流湍急。' },
-          { id: 4, name: '東龍島碼頭/白燈台', region: '西貢', type: '磯釣', lat: 22.2520, lng: 114.2610, score: 8.8, fish: '泥鯭、石九公、黑立', desc: '香港熱點磯釣場，水深適中。' }
+          { id: 1, name: '西貢北潭涌碼頭', region: '西貢', type: '磯釣', lat: 22.3965, lng: 114.3182, score: 9.2, desc: '水質極佳，適合波釣法，潮水動時咬口旺。' },
+          { id: 2, name: '青衣大橋海濱', region: '葵青', type: '投釣', lat: 22.3551, lng: 114.1102, score: 8.5, desc: '水深流急，夜釣熱點，交通便利。' },
+          { id: 3, name: '果洲群島外礁', region: '離島', type: '船釣', lat: 22.2667, lng: 114.3667, score: 9.6, desc: '專業磯釣/艇釣大物場，水流湍急。' }
         ]);
 
         const filteredSpots = computed(() => {
-          return spots.value.filter(spot => {
-            const matchSearch = spot.name.includes(searchQuery.value) || spot.region.includes(searchQuery.value);
-            const matchType = selectedType.value === 'ALL' || spot.type === selectedType.value;
-            return matchSearch && matchType;
-          });
+          return spots.value.filter(s => s.name.includes(searchQuery.value) || s.region.includes(searchQuery.value));
         });
 
-        const initMap = () => {
-          // 以香港中心為原點
-          map = L.map('map-container').setView([22.35, 114.18], 11);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-          }).addTo(map);
-
-          renderMarkers();
+        const fetchTideData = async () => {
+          try {
+            const res = await fetch('/api/tide');
+            const data = await res.json();
+            if (data.success) {
+              tideList.value = data.tides;
+            }
+          } catch (err) {
+            console.error('API 連線失敗', err);
+          }
         };
 
-        const renderMarkers = () => {
+        const initMap = () => {
+          if (map) return;
+          map = L.map('map-container').setView([22.35, 114.18], 11);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
           spots.value.forEach(spot => {
-            const marker = L.marker([spot.lat, spot.lng]).addTo(map)
-              .bindPopup(`<b>${spot.name}</b><br>主攻：${spot.fish}`);
-            markers.push({ id: spot.id, marker });
+            L.marker([spot.lat, spot.lng]).addTo(map).bindPopup(`<b>${spot.name}</b>`);
           });
         };
 
         const focusSpot = (spot) => {
           map.setView([spot.lat, spot.lng], 14);
-          const target = markers.find(m => m.id === spot.id);
-          if (target) target.marker.openPopup();
         };
 
         onMounted(() => {
-          initMap();
+          fetchTideData();
+          setTimeout(() => initMap(), 500);
         });
 
-        return { currentTab, searchQuery, selectedType, spots, filteredSpots, focusSpot };
+        return { currentTab, searchQuery, spots, filteredSpots, focusSpot, tideList, fetchTideData };
       }
     }).mount('#app');
   </script>
