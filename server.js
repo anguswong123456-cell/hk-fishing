@@ -8,11 +8,10 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 香港天文台 API
+// 天文台 API 網址
 const HKO_TIDE_API = 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=tide&lang=tc';
 const HKO_WEATHER_API = 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=rhrread&lang=tc';
 
-// 潮汐及天氣即時 API
 app.get('/api/tide', async (req, res) => {
   try {
     const [tideRes, weatherRes] = await Promise.all([
@@ -28,14 +27,11 @@ app.get('/api/tide', async (req, res) => {
       if (weatherRes.data.meanPressure && weatherRes.data.meanPressure.value) {
         pressure = parseFloat(weatherRes.data.meanPressure.value);
       }
-
-      // 天文台氣壓加減分演算法
       if (pressure >= 1012) {
         weatherBonus += 1.5;
       } else if (pressure < 1005) {
         weatherBonus -= 2.0;
       }
-
       if (weatherRes.data.rainfall && weatherRes.data.rainfall.data) {
         const hasRain = weatherRes.data.rainfall.data.some(r => r.max > 0);
         if (hasRain) {
@@ -104,7 +100,7 @@ app.get('/api/tide', async (req, res) => {
   }
 });
 
-// 前端靜態頁面萬用路由（避開 /api）
+// 前端靜態頁面萬用路由
 app.get(/^(?!\/api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
