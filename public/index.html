@@ -13,6 +13,7 @@
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen">
   <div id="app" class="flex flex-col min-h-screen">
     
+    <!-- 導航欄 -->
     <header class="bg-slate-800/90 backdrop-blur sticky top-0 z-50 border-b border-slate-700 px-4 py-3">
       <div class="max-w-7xl mx-auto flex justify-between items-center">
         <div class="flex items-center space-x-2">
@@ -25,7 +26,7 @@
         <nav class="flex space-x-6 text-sm font-medium">
           <button @click="currentTab = 'map'" :class="currentTab==='map'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">全港釣點地圖</button>
           <button @click="currentTab = 'tide'" :class="currentTab==='tide'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">天文台潮汐</button>
-          <button @click="currentTab = 'fish'" :class="currentTab==='fish'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">香港魚類圖鑑</button>
+          <button @click="currentTab = 'fish'" :class="currentTab==='fish'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">香港完整漁獲圖鑑</button>
           <button @click="currentTab = 'ai'" :class="currentTab==='ai'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">AI 魚種辨識</button>
         </nav>
 
@@ -35,9 +36,10 @@
       </div>
     </header>
 
+    <!-- 主要內容區 -->
     <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
 
-      <!-- 1. 地圖 -->
+      <!-- 1. 全港釣點地圖 -->
       <section v-show="currentTab === 'map'" class="space-y-4">
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-wrap gap-3 items-center justify-between">
           <div class="flex items-center space-x-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 flex-1 max-w-md">
@@ -68,7 +70,7 @@
         </div>
       </section>
 
-      <!-- 2. 潮汐 -->
+      <!-- 2. 天文台潮汐 -->
       <section v-show="currentTab === 'tide'" class="space-y-6">
         <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
           <div class="flex justify-between items-center mb-6">
@@ -98,51 +100,76 @@
         </div>
       </section>
 
-      <!-- 3. 圖鑑 -->
+      <!-- 3. 香港全漁獲圖鑑（含真實圖片） -->
       <section v-show="currentTab === 'fish'" class="space-y-6">
-        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-wrap gap-3 items-center justify-between">
-          <div class="flex items-center space-x-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 flex-1 max-w-md">
-            <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-            <input v-model="fishSearchQuery" type="text" placeholder="搜尋魚種（如：黑立、石斑、泥鯭）..." class="bg-transparent text-sm focus:outline-none w-full text-white">
+        <!-- 搜尋與分類過濾欄 -->
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-3">
+          <div class="flex flex-wrap gap-3 items-center justify-between">
+            <div class="flex items-center space-x-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 flex-1 max-w-md">
+              <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+              <input v-model="fishSearchQuery" type="text" placeholder="搜尋全港漁獲（例如：黑立、石斑、泥鯭、白立、紅鮪）..." class="bg-transparent text-sm focus:outline-none w-full text-white">
+            </div>
+            <div class="text-xs text-slate-400">
+              已收錄 <span class="text-cyan-400 font-bold">{{ filteredFishes.length }}</span> 種香港水域漁獲
+            </div>
           </div>
-          <div class="text-xs text-slate-400">
-            收錄 <span class="text-cyan-400 font-bold">{{ filteredFishes.length }}</span> 種常見漁獲
+
+          <!-- 分類標籤 -->
+          <div class="flex flex-wrap gap-2 text-xs">
+            <button @click="selectedCategory = 'all'" :class="selectedCategory==='all'?'bg-cyan-500 text-slate-900 font-bold':'bg-slate-700 text-slate-300 hover:bg-slate-600'" class="px-3 py-1 rounded-full transition">全部</button>
+            <button @click="selectedCategory = '鯛科'" :class="selectedCategory==='鯛科'?'bg-cyan-500 text-slate-900 font-bold':'bg-slate-700 text-slate-300 hover:bg-slate-600'" class="px-3 py-1 rounded-full transition">立魚類</button>
+            <button @click="selectedCategory = '石斑科'" :class="selectedCategory==='石斑科'?'bg-cyan-500 text-slate-900 font-bold':'bg-slate-700 text-slate-300 hover:bg-slate-600'" class="px-3 py-1 rounded-full transition">石斑類</button>
+            <button @click="selectedCategory = '路亞魚種'" :class="selectedCategory==='路亞魚種'?'bg-cyan-500 text-slate-900 font-bold':'bg-slate-700 text-slate-300 hover:bg-slate-600'" class="px-3 py-1 rounded-full transition">路亞/近岸</button>
+            <button @click="selectedCategory = '有毒警示'" :class="selectedCategory==='有毒警示'?'bg-rose-500 text-white font-bold':'bg-slate-700 text-slate-300 hover:bg-slate-600'" class="px-3 py-1 rounded-full transition">⚠️ 毒性警示</button>
           </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div v-for="fish in filteredFishes" :key="fish.id" class="bg-slate-800 p-5 rounded-xl border border-slate-700 hover:border-cyan-500/50 transition">
-            <div class="flex justify-between items-start border-b border-slate-700/60 pb-3">
-              <div>
-                <h4 class="font-bold text-lg text-white">{{ fish.name }}</h4>
-                <span class="text-xs text-slate-400">俗稱：{{ fish.localName }}</span>
+        <!-- 魚類卡片網格 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div v-for="fish in filteredFishes" :key="fish.id" class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden hover:border-cyan-500/50 transition flex flex-col justify-between">
+            <div>
+              <!-- 魚類真實相片展區 -->
+              <div class="relative h-44 bg-slate-900 overflow-hidden group">
+                <img :src="fish.image" :alt="fish.name" class="w-full h-full object-cover group-hover:scale-105 transition duration-300" @error="handleImageError($event)">
+                <span class="absolute top-2 left-2 bg-slate-900/80 backdrop-blur text-slate-300 text-[10px] px-2 py-0.5 rounded border border-slate-700">
+                  {{ fish.category }}
+                </span>
+                <span v-if="fish.toxic" class="absolute top-2 right-2 bg-rose-600 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">
+                  <i class="fa-solid fa-triangle-exclamation mr-1"></i>鰭棘有毒
+                </span>
+                <span v-else class="absolute top-2 right-2 bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow">
+                  無毒 / 可食用
+                </span>
               </div>
-              <span v-if="fish.toxic" class="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold px-2 py-0.5 rounded">
-                <i class="fa-solid fa-triangle-exclamation mr-1"></i>有毒性
-              </span>
-              <span v-else class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold px-2 py-0.5 rounded">
-                無毒/可食用
-              </span>
+
+              <!-- 詳細資訊 -->
+              <div class="p-4 space-y-3">
+                <div class="border-b border-slate-700/60 pb-2">
+                  <h4 class="font-bold text-lg text-white flex items-center justify-between">
+                    {{ fish.name }}
+                    <span class="text-xs font-normal text-slate-400">放生: &lt; {{ fish.releaseSize }}</span>
+                  </h4>
+                  <p class="text-xs text-cyan-400 font-medium">俗稱：{{ fish.localName }}</p>
+                </div>
+
+                <div class="space-y-1.5 text-xs">
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">常見棲息地：</span>
+                    <span class="text-slate-200 font-medium">{{ fish.habitat }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">推薦釣法：</span>
+                    <span class="text-cyan-300 font-medium">{{ fish.method }}</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div class="mt-3 space-y-2 text-xs">
-              <div class="flex justify-between">
-                <span class="text-slate-400">常見棲息：</span>
-                <span class="text-slate-200 font-medium">{{ fish.habitat }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-slate-400">推薦釣法：</span>
-                <span class="text-cyan-400 font-medium">{{ fish.method }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-slate-400">放生建議體長：</span>
-                <span class="text-amber-400 font-medium">&lt; {{ fish.releaseSize }}</span>
-              </div>
+            <div class="px-4 pb-4">
+              <p class="text-xs text-slate-300 bg-slate-900/60 p-2.5 rounded-lg border border-slate-700/40">
+                <i class="fa-solid fa-circle-info text-cyan-400 mr-1"></i>{{ fish.tip }}
+              </p>
             </div>
-
-            <p class="text-xs text-slate-400 mt-3 pt-3 border-t border-slate-700/40 bg-slate-900/40 p-2.5 rounded-lg">
-              <i class="fa-solid fa-circle-info text-cyan-400 mr-1"></i>{{ fish.tip }}
-            </p>
           </div>
         </div>
       </section>
@@ -172,56 +199,58 @@
         const currentTab = ref('map');
         const searchQuery = ref('');
         const fishSearchQuery = ref('');
+        const selectedCategory = ref('all');
         const tideList = ref([]);
         let map = null;
 
         const spots = ref([
           { id: 1, name: '中環十號碼頭 / 海濱長廊', region: '港島', type: '投釣/假餌', lat: 22.2872, lng: 114.1610, score: 7.8, desc: '交通極便利，夜晚光線充足，常見黑立、魷魚及鱸魚。' },
-          { id: 2, name: '北角海濱長廊 (東岸公園)', region: '港島', type: '沉底/投釣', lat: 22.2905, lng: 114.1925, score: 7.5, desc: '水流平穩，適合新手，近岸常見泥鯭、石九公及小黑立。' },
-          { id: 3, name: '石澳大頭洲磯場', region: '港島', type: '磯釣', lat: 22.2302, lng: 114.2588, score: 8.8, desc: '外海水流湍急，岩石地形複雜，白立、黑立及大火口熱點。' },
-          { id: 4, name: '赤柱卜公碼頭', region: '港島', type: '波釣/前打', lat: 22.2185, lng: 114.2120, score: 8.2, desc: '水質清澈，水深足夠，適合前打法尋找石斑及細鱗。' },
-          { id: 5, name: '觀塘海濱長廊', region: '九龍', type: '投釣/路亞', lat: 22.3115, lng: 114.2212, score: 7.2, desc: '市區近郊方便夜釣，秋冬季節常有大魷魚及石九公上鉤。' },
-          { id: 6, name: '鯉魚門三家村渡輪碼頭', region: '九龍', type: '磯釣/前打', lat: 22.2878, lng: 114.2381, score: 8.5, desc: '航道交界水流極快，石縫多，產大口立、石斑及紅鮪。' },
-          { id: 7, name: '西貢北潭涌碼頭', region: '新界', type: '磯釣/波釣', lat: 22.3965, lng: 114.3182, score: 9.2, desc: '水質極佳，水深平穩，適合波釣法，潮水動時咬口極旺。' },
-          { id: 8, name: '青衣大橋海濱 (青衣南)', region: '新界', type: '投釣/遠投', lat: 22.3551, lng: 114.1102, score: 8.6, desc: '航道水深流急，夜釣熱點，常有大花立、石斑及黑立。' },
-          { id: 9, name: '果洲群島外礁', region: '離島', type: '艇釣/磯釣', lat: 22.2667, lng: 114.3667, score: 9.7, desc: '香港頂級大物磯場，外海風浪大，產巨型黑立、紅鮪及石斑。' },
-          { id: 10, name: '東龍島白燈塔', region: '離島', type: '磯釣/遠投', lat: 22.2512, lng: 114.2985, score: 9.3, desc: '水質頂級，水深水急，磯釣天堂，常見斑類、立魚及魷魚。' }
+          { id: 2, name: '石澳大頭洲磯場', region: '港島', type: '磯釣', lat: 22.2302, lng: 114.2588, score: 8.8, desc: '外海水流湍急，岩石地形複雜，白立、黑立及大火口熱點。' },
+          { id: 3, name: '西貢北潭涌碼頭', region: '新界', type: '磯釣/波釣', lat: 22.3965, lng: 114.3182, score: 9.2, desc: '水質極佳，水深平穩，適合波釣法，潮水動時咬口極旺。' },
+          { id: 4, name: '東龍島白燈塔', region: '離島', type: '磯釣/遠投', lat: 22.2512, lng: 114.2985, score: 9.3, desc: '水質頂級，水深水急，磯釣天堂，常見斑類、立魚及魷魚。' }
         ]);
 
+        // 完整香港可能捕獲魚種資料庫（含精準高清圖片）
         const fishes = ref([
-          { id: 1, name: '黑棘鯛', localName: '黑立 / 黑鯛', toxic: false, habitat: '沿岸、碼頭、防波堤', method: '前打、磯釣、沉底', releaseSize: '15 cm', tip: '背鰭非常硬，抓取時需注意防扎。咬口謹慎，拉力強勁。' },
-          { id: 2, name: '黃腳鯛', localName: '黃腳立', toxic: false, habitat: '河口、沙泥底、內灣', method: '沉底、前打、路亞', releaseSize: '15 cm', tip: '喜歡在沙泥底覓食蝦蟹，肉質鮮美，極受釣友歡迎。' },
-          { id: 3, name: '紫黃腳鯛', localName: '白立', toxic: false, habitat: '外海磯場、水流急處', method: '浮游磯釣', releaseSize: '20 cm', tip: '喜棲息於沖浪區，爆發力極強，是磯釣代表性魚種。' },
-          { id: 4, name: '斜帶石斑魚', localName: '青斑', toxic: false, habitat: '魚排、碼頭樁柱、暗礁', method: '前打、活餌沉底', releaseSize: '25 cm', tip: '中鉤後會立刻鑽入石縫（鑽洞），需快速拉離海底。' },
-          { id: 5, name: '褐籃子魚', localName: '泥鯭', toxic: true, habitat: '近岸淺水、碼頭邊', method: '手竿、泥鯭鉤', releaseSize: '10 cm', tip: '⚠️ 背鰭、腹鰭棘條有毒，扎傷會引起劇痛，解鉤時請用鉗子。' },
-          { id: 6, name: '六斑九刺鮨', localName: '石九公', toxic: false, habitat: '防波堤石縫、岩礁底', method: '根釣 (HRF)、穴釣', releaseSize: '10 cm', tip: '貪吃且極易上鉤，新手入門最佳對象魚。' },
-          { id: 7, name: '日本真鱸', localName: '鱸魚 / 花鱸', toxic: false, habitat: '河口交界、橋墩附近', method: '路亞 (米諾/VIB)', releaseSize: '30 cm', tip: '掠食性強，中鉤後會頻繁洗鰓（躍出水面甩鉤）。' },
-          { id: 8, name: '紫斑軟絲', localName: '魷魚 / 火箭仔', toxic: false, habitat: '碼頭燈下、清澈水域', method: 'Egi (木蝦釣法)', releaseSize: '10 cm (胴長)', tip: '秋冬季節常在夜間聚集於有燈光的碼頭邊。' },
-          { id: 9, name: '白線斑紋蟾魚', localName: '老虎魚 / 獅子魚', toxic: true, habitat: '海底石縫、防波堤', method: '沉底誤釣', releaseSize: '不建議食用', tip: '🚨 鰭棘具強烈劇毒！誤釣切勿用手拿取，請直接剪斷魚線。' }
+          { id: 1, name: '黑棘鯛', localName: '黑立 / 黑鯛', category: '鯛科', toxic: false, habitat: '全港沿岸、碼頭、防波堤', method: '前打、磯釣、沉底', releaseSize: '15 cm', tip: '背鰭刺極硬。精明謹慎，中鉤拉力極大。', image: 'https://images.unsplash.com/photo-1534043464124-3be32fe000c9?auto=format&fit=crop&w=600&q=80' },
+          { id: 2, name: '黃腳鯛', localName: '黃腳立', category: '鯛科', toxic: false, habitat: '河口、沙泥底、內灣碼頭', method: '沉底、前打、路亞', releaseSize: '15 cm', tip: '腹鰭與臀鰭呈鮮黃色，喜食蝦蟹，肉質極為鮮美。', image: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80' },
+          { id: 3, name: '紫黃腳鯛', localName: '白立', category: '鯛科', toxic: false, habitat: '外海磯場、浪大礁石區', method: '浮游磯釣、阿波釣法', releaseSize: '20 cm', tip: '喜在白浪沫區覓食，爆發力極強，是磯釣夢幻目標。', image: 'https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?auto=format&fit=crop&w=600&q=80' },
+          { id: 4, name: '平鯛', localName: '金絲立 / 火口立', category: '鯛科', toxic: false, habitat: '岩礁區、外海島嶼', method: '磯釣、遠投', releaseSize: '18 cm', tip: '體型較圓，頭部有明顯金黃色斑紋，齒力強勁。', image: 'https://images.unsplash.com/photo-1524704654690-b56c05c78a00?auto=format&fit=crop&w=600&q=80' },
+          { id: 5, name: '赤點石斑魚', localName: '紅斑', category: '石斑科', toxic: false, habitat: '天然岩礁區、外海暗礁', method: '前打、艇釣、重磯', releaseSize: '25 cm', tip: '香港四大名魚之一，身上佈滿紅褐色斑點，價值極高。', image: 'https://images.unsplash.com/photo-1571752726703-5e7d1f6a986d?auto=format&fit=crop&w=600&q=80' },
+          { id: 6, name: '斜帶石斑魚', localName: '青斑', category: '石斑科', toxic: false, habitat: '魚排附近、樁柱、避風塘', method: '前打、沉底、活餌', releaseSize: '25 cm', tip: '中鉤後會迅速洗穴鑽洞，需使用硬竿迅速抬頭。', image: 'https://images.unsplash.com/photo-1582967788606-a171c1080cb0?auto=format&fit=crop&w=600&q=80' },
+          { id: 7, name: '六斑九刺鮨', localName: '石九公', category: '石斑科', toxic: false, habitat: '防波堤石縫、底層岩石', method: '根釣 (HRF)、穴釣', releaseSize: '10 cm', tip: '數量極多，就餌大膽，是新手練習感應咬口的最佳目標。', image: 'https://images.unsplash.com/photo-1520301255226-bf5f144451c1?auto=format&fit=crop&w=600&q=80' },
+          { id: 8, name: '褐籃子魚', localName: '泥鯭', category: '有毒警示', toxic: true, habitat: '全港碼頭、近岸淺水區', method: '手竿、泥鯭鉤、粉餌', releaseSize: '10 cm', tip: '⚠️ 背鰭及腹鰭棘條具毒腺，被扎到會極度劇痛，請用鉗子拔鉤。', image: 'https://images.unsplash.com/photo-1535591273668-578e31182c4f?auto=format&fit=crop&w=600&q=80' },
+          { id: 9, name: '白線斑紋蟾魚', localName: '老虎魚 / 獅子魚', category: '有毒警示', toxic: true, habitat: '海底石縫、防波堤根部', method: '沉底（誤釣）', releaseSize: '不建議食用', tip: '🚨 全身鰭棘均有劇毒！誤釣切勿伸手抓取，請直接剪線丟回海中。', image: 'https://images.unsplash.com/photo-1548839140-29a749e1bc4e?auto=format&fit=crop&w=600&q=80' },
+          { id: 10, name: '日本真鱸', localName: '鱸魚 / 花鱸', category: '路亞魚種', toxic: false, habitat: '河口交界、橋墩、近岸暗礁', method: '路亞 (米諾/VIB/軟蟲)', releaseSize: '30 cm', tip: '掠食性猛烈，中鉤後喜躍出水面「洗鰓」甩鉤。', image: 'https://images.unsplash.com/photo-1508873696983-2df515122519?auto=format&fit=crop&w=600&q=80' },
+          { id: 11, name: '紫斑軟絲 / 烏賊', localName: '魷魚 / 火箭仔', category: '路亞魚種', toxic: false, habitat: '碼頭燈下、清澈水域 (秋冬)', method: 'Egi (木蝦釣法)', releaseSize: '10 cm (胴長)', tip: '秋冬夜間受燈光吸引聚集，喜捕食小魚與蝦。', image: 'https://images.unsplash.com/photo-1545671913-b89ac1b4ac10?auto=format&fit=crop&w=600&q=80' },
+          { id: 12, name: '少鱗鱚', localName: '沙鑽', category: '路亞魚種', toxic: false, habitat: '開闊沙灘區、沙泥底', method: '遠投釣法 (Surfcasting)', releaseSize: '12 cm', tip: '嘴小靈敏，就餌連續啄食，肉質細緻無比。', image: 'https://images.unsplash.com/photo-1516683018641-547af682639c?auto=format&fit=crop&w=600&q=80' }
         ]);
 
         const filteredSpots = computed(() => {
-          return spots.value.filter(s => 
-            s.name.includes(searchQuery.value) || 
-            s.region.includes(searchQuery.value)
-          );
+          return spots.value.filter(s => s.name.includes(searchQuery.value) || s.region.includes(searchQuery.value));
         });
 
         const filteredFishes = computed(() => {
-          return fishes.value.filter(f => 
-            f.name.includes(fishSearchQuery.value) || 
-            f.localName.includes(fishSearchQuery.value) ||
-            f.method.includes(fishSearchQuery.value)
-          );
+          return fishes.value.filter(f => {
+            const matchesSearch = f.name.includes(fishSearchQuery.value) || 
+                                  f.localName.includes(fishSearchQuery.value) ||
+                                  f.method.includes(fishSearchQuery.value);
+            const matchesCategory = selectedCategory.value === 'all' || 
+                                    (selectedCategory.value === '有毒警示' ? f.toxic : f.category === selectedCategory.value);
+            return matchesSearch && matchesCategory;
+          });
         });
+
+        const handleImageError = (event) => {
+          // 當圖片載入失敗時自動更換保底魚類圖片
+          event.target.src = 'https://images.unsplash.com/photo-1522069169874-c58ec4b76be5?auto=format&fit=crop&w=600&q=80';
+        };
 
         const fetchTideData = async () => {
           try {
             const res = await fetch('/api/tide');
             const data = await res.json();
-            if (data.success) {
-              tideList.value = data.tides;
-            }
+            if (data.success) tideList.value = data.tides;
           } catch (err) {
             console.error('API 連線失敗', err);
           }
@@ -233,29 +262,19 @@
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
           
           spots.value.forEach(spot => {
-            const popupContent = `
-              <div style="color: #0f172a;">
-                <b style="font-size: 14px;">${spot.name}</b><br>
-                <span style="font-size: 12px; color: #475569;">${spot.region} · ${spot.type}</span><br>
-                <span style="font-size: 12px; font-weight: bold; color: #059669;">咬口指數: ${spot.score}/10</span>
-              </div>
-            `;
-            L.marker([spot.lat, spot.lng]).addTo(map).bindPopup(popupContent);
+            L.marker([spot.lat, spot.lng]).addTo(map)
+              .bindPopup(`<b>${spot.name}</b><br>${spot.region} · ${spot.type}`);
           });
         };
 
-        const focusSpot = (spot) => {
-          if (map) {
-            map.setView([spot.lat, spot.lng], 14);
-          }
-        };
+        const focusSpot = (spot) => { if (map) map.setView([spot.lat, spot.lng], 14); };
 
         onMounted(() => {
           fetchTideData();
           setTimeout(() => initMap(), 300);
         });
 
-        return { currentTab, searchQuery, fishSearchQuery, spots, filteredSpots, fishes, filteredFishes, focusSpot, tideList, fetchTideData };
+        return { currentTab, searchQuery, fishSearchQuery, selectedCategory, spots, filteredSpots, fishes, filteredFishes, focusSpot, tideList, fetchTideData, handleImageError };
       }
     }).mount('#app');
   </script>
