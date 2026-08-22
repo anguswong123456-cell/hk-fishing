@@ -5,11 +5,10 @@ const path = require('path');
 
 const app = express();
 app.use(cors());
-
-// 提供 public 資料夾內的靜態檔案 (index.html)
+app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 香港天文台潮汐預報 API
+// 天文台潮汐 API
 const HKO_TIDE_API = 'https://data.weather.gov.hk/weatherAPI/opendata/weather.php?dataType=tide&lang=tc';
 
 app.get('/api/tide', async (req, res) => {
@@ -18,7 +17,6 @@ app.get('/api/tide', async (req, res) => {
     const tideData = response.data;
     let processedData = [];
 
-    // 深入解析天文台 JSON 資料結構
     if (tideData && tideData.data) {
       tideData.data.forEach(station => {
         if (station.tidePred) {
@@ -27,16 +25,9 @@ app.get('/api/tide', async (req, res) => {
             let status = '平潮';
             let biteScore = 5;
 
-            if (height >= 1.8) {
-              status = '滿潮 (High Tide)';
-              biteScore = 9; // 高潮黃金咬口
-            } else if (height <= 0.8) {
-              status = '乾潮 (Low Tide)';
-              biteScore = 4;
-            } else {
-              status = '漲/退潮中';
-              biteScore = 7;
-            }
+            if (height >= 1.8) { status = '滿潮 (High Tide)'; biteScore = 9; }
+            else if (height <= 0.8) { status = '乾潮 (Low Tide)'; biteScore = 4; }
+            else { status = '漲/退潮中'; biteScore = 7; }
 
             processedData.push({
               location: station.location || '鰂魚涌',
@@ -51,7 +42,6 @@ app.get('/api/tide', async (req, res) => {
       });
     }
 
-    // 如果天文台一時無資料傳回，提供預設黃金潮汐示範數據
     if (processedData.length === 0) {
       processedData = [
         { location: '橫瀾島', time: '06:00', height: 1.2, unit: 'm', status: '漲潮中', biteScore: 7 },
@@ -67,16 +57,17 @@ app.get('/api/tide', async (req, res) => {
       updatedAt: new Date().toLocaleTimeString(),
       tides: processedData
     });
-
   } catch (error) {
-    console.error('抓取天文台潮汐失敗:', error);
     res.status(500).json({ success: false, message: '無法取得潮汐數據' });
   }
 });
 
-const PORT = 3000;
+// 通配路由：確保首頁與前端頁面正常讀取
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`\n🚀 [HK Fishing] 伺服器已更新成功！`);
-  console.log(`🔗 前端首頁: http://localhost:${PORT}`);
-  console.log(`📡 潮汐 API: http://localhost:${PORT}/api/tide\n`);
+  console.log(`🚀 [HK Fishing] 伺服器已於 Port ${PORT} 啟動！`);
 });
