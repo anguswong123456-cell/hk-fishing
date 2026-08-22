@@ -26,7 +26,7 @@
         <nav class="flex space-x-6 text-sm font-medium">
           <button @click="currentTab = 'map'" :class="currentTab==='map'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">全港釣點地圖</button>
           <button @click="currentTab = 'tide'" :class="currentTab==='tide'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">天文台潮汐</button>
-          <button @click="currentTab = 'fish'" :class="currentTab==='fish'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">香港魚類圖鑑</button>
+          <button @click="currentTab = 'fish'" :class="currentTab==='fish'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">香港常見魚類</button>
           <button @click="currentTab = 'ai'" :class="currentTab==='ai'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">AI 魚種辨識</button>
         </nav>
 
@@ -99,15 +99,15 @@
         </div>
       </section>
 
-      <!-- 3. 圖鑑 -->
+      <!-- 3. 香港常見魚類 -->
       <section v-show="currentTab === 'fish'" class="space-y-6">
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-wrap gap-3 items-center justify-between">
           <div class="flex items-center space-x-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 flex-1 max-w-md">
             <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-            <input v-model="fishSearchQuery" type="text" placeholder="搜尋魚種（如：黑立、石斑、泥鯭）..." class="bg-transparent text-sm focus:outline-none w-full text-white">
+            <input v-model="fishSearchQuery" type="text" placeholder="搜尋香港常見魚類（如：黑立、石斑、泥鯭）..." class="bg-transparent text-sm focus:outline-none w-full text-white">
           </div>
           <div class="text-xs text-slate-400">
-            收錄 <span class="text-cyan-400 font-bold">{{ filteredFishes.length }}</span> 種常見漁獲
+            收錄 <span class="text-cyan-400 font-bold">{{ filteredFishes.length }}</span> 種香港常見魚類
           </div>
         </div>
 
@@ -177,7 +177,7 @@
         let map = null;
         let markersGroup = null;
 
-        // 全港多區釣點（增至 25 個熱門與在地釣點）
+        // 全港多區釣點
         const spots = ref([
           // --- 港島區 ---
           { id: 1, name: '中環十號碼頭 / 海濱長廊', region: '港島', type: '投釣/假餌', lat: 22.2872, lng: 114.1610, score: 7.8, desc: '交通極便利，夜晚光線充足，常見黑立、魷魚及鱸魚。' },
@@ -218,11 +218,11 @@
           { id: 1, name: '黑棘鯛', localName: '黑立 / 黑鯛', toxic: false, habitat: '沿岸、碼頭、防波堤', method: '前打、磯釣、沉底', releaseSize: '15 cm', tip: '背鰭非常硬，抓取時需注意防扎。咬口謹慎，拉力強勁。' },
           { id: 2, name: '黃腳鯛', localName: '黃腳立', toxic: false, habitat: '河口、沙泥底、內灣', method: '沉底、前打、路亞', releaseSize: '15 cm', tip: '喜歡在沙泥底覓食蝦蟹，肉質鮮美，極受釣友歡迎。' },
           { id: 3, name: '紫黃腳鯛', localName: '白立', toxic: false, habitat: '外海磯場、水流急處', method: '浮游磯釣', releaseSize: '20 cm', tip: '喜棲息於沖浪區，爆發力極強，是磯釣代表性魚種。' },
-          { id: 4, name: '斜帶石斑魚', localName: '青斑', toxic: false, habitat: '魚排、碼頭樁柱、暗礁', method: '前打、活餌沉底', releaseSize: '25 cm', tip: '中鉤後會立刻鑽入石縫（鑽洞），需快速拉離海底。' },
+          { id: 4, name: '斜帶石斑魚', localName: '青斑', toxic: false, habitat: '魚排、碼頭樁柱、暗礁', method: '前打、活餌沉底', releaseSize: '25 cm', tip: '中鉤後會體會立刻鑽入石縫（鑽洞），需快速拉離海底。' },
           { id: 5, name: '褐籃子魚', localName: '泥鯭', toxic: true, habitat: '近岸淺水、碼頭邊', method: '手竿、泥鯭鉤', releaseSize: '10 cm', tip: '⚠️ 背鰭、腹鰭棘條有毒，扎傷會引起劇痛，解鉤時請用鉗子。' },
           { id: 6, name: '六斑九刺鮨', localName: '石九公', toxic: false, habitat: '防波堤石縫、岩礁底', method: '根釣 (HRF)、穴釣', releaseSize: '10 cm', tip: '貪吃且極易上鉤，新手入門最佳對象魚。' },
           { id: 7, name: '日本真鱸', localName: '鱸魚 / 花鱸', toxic: false, habitat: '河口交界、橋墩附近', method: '路亞 (米諾/VIB)', releaseSize: '30 cm', tip: '掠食性強，中鉤後會頻繁洗鰓（躍出水面甩鉤）。' },
-          { id: 8, name: '紫斑軟絲', localName: '魷魚 / 火箭仔', toxic: false, habitat: '碼頭燈下、清澈水域', method: 'Egi (木蝦釣法)', releaseSize: '10 cm (胴長)', tip: '秋冬季節常在夜間聚集於有燈光的碼頭邊。' },
+          { id: 8, name: '紫斑軟絲', localName: '魷魚 / 火火箭仔', toxic: false, habitat: '碼頭燈下、清澈水域', method: 'Egi (木蝦釣法)', releaseSize: '10 cm (胴長)', tip: '秋冬季節常在夜間聚集於有燈光的碼頭邊。' },
           { id: 9, name: '白線斑紋蟾魚', localName: '老虎魚 / 獅子魚', toxic: true, habitat: '海底石縫、防波堤', method: '沉底誤釣', releaseSize: '不建議食用', tip: '🚨 鰭棘具強烈劇毒！誤釣切勿用手拿取，請直接剪斷魚線。' }
         ]);
 
@@ -297,7 +297,6 @@
         const focusSpot = (spot) => {
           if (map) {
             map.setView([spot.lat, spot.lng], 14, { animate: true });
-            // 尋找並自動開啟彈出視窗
             if (markersGroup) {
               markersGroup.eachLayer(layer => {
                 const latLng = layer.getLatLng();
