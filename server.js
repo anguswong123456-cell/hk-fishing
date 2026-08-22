@@ -63,7 +63,7 @@ app.get('/api/tide', async (req, res) => {
 });
 
 // 通配路由：確保首頁與前端頁面正常讀取
-app.get('*', (req, res) => {
+app.get(/^(?!\/api).*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
