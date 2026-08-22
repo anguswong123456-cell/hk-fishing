@@ -13,6 +13,7 @@
 <body class="bg-slate-900 text-slate-100 font-sans min-h-screen">
   <div id="app" class="flex flex-col min-h-screen">
     
+    <!-- 頁首導覽 -->
     <header class="bg-slate-800/90 backdrop-blur sticky top-0 z-50 border-b border-slate-700 px-4 py-3">
       <div class="max-w-7xl mx-auto flex justify-between items-center">
         <div class="flex items-center space-x-2">
@@ -37,21 +38,21 @@
 
     <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
 
-      <!-- 1. 地圖 -->
+      <!-- 1. 地圖與釣點清單 -->
       <section v-show="currentTab === 'map'" class="space-y-4">
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-wrap gap-3 items-center justify-between">
           <div class="flex items-center space-x-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 flex-1 max-w-md">
             <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-            <input v-model="searchQuery" type="text" placeholder="搜尋釣點..." class="bg-transparent text-sm focus:outline-none w-full text-white">
+            <input v-model="searchQuery" type="text" placeholder="搜尋釣點或區域（如：港島、西貢、碼頭）..." class="bg-transparent text-sm focus:outline-none w-full text-white">
           </div>
           <div class="text-xs text-slate-400">
-            已載入 <span class="text-cyan-400 font-bold">{{ filteredSpots.length }}</span> 個釣點
+            已載入 <span class="text-cyan-400 font-bold">{{ filteredSpots.length }}</span> 個全港釣點
           </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div class="lg:col-span-2 bg-slate-800 h-[520px] rounded-xl border border-slate-700 overflow-hidden relative z-0" id="map-container"></div>
-          <div class="space-y-3 overflow-y-auto max-h-[520px] pr-1">
+          <div class="lg:col-span-2 bg-slate-800 h-[560px] rounded-xl border border-slate-700 overflow-hidden relative z-0" id="map-container"></div>
+          <div class="space-y-3 overflow-y-auto max-h-[560px] pr-1">
             <div v-for="spot in filteredSpots" :key="spot.id" @click="focusSpot(spot)" class="bg-slate-800 p-4 rounded-xl border border-slate-700 hover:border-cyan-500/50 cursor-pointer transition">
               <div class="flex justify-between items-start">
                 <div>
@@ -165,7 +166,7 @@
   </div>
 
   <script>
-    const { createApp, ref, onMounted, computed } = Vue;
+    const { createApp, ref, onMounted, computed, watch } = Vue;
 
     createApp({
       setup() {
@@ -174,20 +175,45 @@
         const fishSearchQuery = ref('');
         const tideList = ref([]);
         let map = null;
+        let markersGroup = null;
 
+        // 全港多區釣點（增至 25 個熱門與在地釣點）
         const spots = ref([
+          // --- 港島區 ---
           { id: 1, name: '中環十號碼頭 / 海濱長廊', region: '港島', type: '投釣/假餌', lat: 22.2872, lng: 114.1610, score: 7.8, desc: '交通極便利，夜晚光線充足，常見黑立、魷魚及鱸魚。' },
           { id: 2, name: '北角海濱長廊 (東岸公園)', region: '港島', type: '沉底/投釣', lat: 22.2905, lng: 114.1925, score: 7.5, desc: '水流平穩，適合新手，近岸常見泥鯭、石九公及小黑立。' },
           { id: 3, name: '石澳大頭洲磯場', region: '港島', type: '磯釣', lat: 22.2302, lng: 114.2588, score: 8.8, desc: '外海水流湍急，岩石地形複雜，白立、黑立及大火口熱點。' },
           { id: 4, name: '赤柱卜公碼頭', region: '港島', type: '波釣/前打', lat: 22.2185, lng: 114.2120, score: 8.2, desc: '水質清澈，水深足夠，適合前打法尋找石斑及細鱗。' },
-          { id: 5, name: '觀塘海濱長廊', region: '九龍', type: '投釣/路亞', lat: 22.3115, lng: 114.2212, score: 7.2, desc: '市區近郊方便夜釣，秋冬季節常有大魷魚及石九公上鉤。' },
-          { id: 6, name: '鯉魚門三家村渡輪碼頭', region: '九龍', type: '磯釣/前打', lat: 22.2878, lng: 114.2381, score: 8.5, desc: '航道交界水流極快，石縫多，產大口立、石斑及紅鮪。' },
-          { id: 7, name: '西貢北潭涌碼頭', region: '新界', type: '磯釣/波釣', lat: 22.3965, lng: 114.3182, score: 9.2, desc: '水質極佳，水深平穩，適合波釣法，潮水動時咬口極旺。' },
-          { id: 8, name: '青衣大橋海濱 (青衣南)', region: '新界', type: '投釣/遠投', lat: 22.3551, lng: 114.1102, score: 8.6, desc: '航道水深流急，夜釣熱點，常有大花立、石斑及黑立。' },
-          { id: 9, name: '果洲群島外礁', region: '離島', type: '艇釣/磯釣', lat: 22.2667, lng: 114.3667, score: 9.7, desc: '香港頂級大物磯場，外海風浪大，產巨型黑立、紅鮪及石斑。' },
-          { id: 10, name: '東龍島白燈塔', region: '離島', type: '磯釣/遠投', lat: 22.2512, lng: 114.2985, score: 9.3, desc: '水質頂級，水深水急，磯釣天堂，常見斑類、立魚及魷魚。' }
+          { id: 5, name: '西環鐘聲泳棚', region: '港島', type: '磯釣/前打', lat: 22.2858, lng: 114.1205, score: 8.4, desc: '水急石多，暗礁豐富，黑立與黃腳立喜棲息於近岸浪擊區。' },
+          { id: 6, name: '柴灣貨物裝卸區碼頭', region: '港島', type: '沉底/投釣', lat: 22.2718, lng: 114.2442, score: 7.6, desc: '水深底質泥沙，秋冬季夜釣常有大花立及深水石九公上鉤。' },
+
+          // --- 九龍區 ---
+          { id: 7, name: '觀塘海濱長廊', region: '九龍', type: '投釣/路亞', lat: 22.3115, lng: 114.2212, score: 7.2, desc: '市區近郊方便夜釣，秋冬季節常有大魷魚及石九公上鉤。' },
+          { id: 8, name: '鯉魚門三家村渡輪碼頭', region: '九龍', type: '磯釣/前打', lat: 22.2878, lng: 114.2381, score: 8.5, desc: '航道交界水流極快，石縫多，產大口立、石斑及紅鮪。' },
+          { id: 9, name: '尖沙咀天星碼頭 (舊海岸邊)', region: '九龍', type: '前打/路亞', lat: 22.2938, lng: 114.1685, score: 7.0, desc: '水深港寬，夜間燈光招引小魚，常有鱸魚及魷魚追餌。' },
+          { id: 10, name: '啟德跑道公園海濱', region: '九龍', type: '投釣/沉底', lat: 22.3082, lng: 114.2155, score: 7.9, desc: '開闊開揚，底質豐富，適合長投尋找黑立與黃腳立。' },
+          { id: 11, name: '紅磡海濱長廊 (渡輪碼頭旁)', region: '九龍', type: '沉底/前打', lat: 22.3005, lng: 114.1832, score: 7.3, desc: '近岸暗礁與防波堤交界，為石斑與泥鯭常駐區域。' },
+
+          // --- 新界區 ---
+          { id: 12, name: '西貢北潭涌碼頭', region: '新界', type: '磯釣/波釣', lat: 22.3965, lng: 114.3182, score: 9.2, desc: '水質極佳，水深平穩，適合波釣法，潮水動時咬口極旺。' },
+          { id: 13, name: '青衣大橋海濱 (青衣南)', region: '新界', type: '投釣/遠投', lat: 22.3551, lng: 114.1102, score: 8.6, desc: '航道水深流急，夜釣熱點，常有大花立、石斑及黑立。' },
+          { id: 14, name: '屯門蝴蝶灣防波堤', region: '新界', type: '遠投/磯釣', lat: 22.3712, lng: 113.9550, score: 8.1, desc: '位於珠江口交界，水質混濁但食物豐富，產大型黃腳立與鱸魚。' },
+          { id: 15, name: '烏溪沙青年新村外海濱', region: '新界', type: '投釣/沉底', lat: 22.4285, lng: 114.2341, score: 7.7, desc: '吐露港內灣平靜，適合新手座釣，沙泥底產花立與鱲魚。' },
+          { id: 16, name: '深井釣魚灣', region: '新界', type: '遠投/沉底', lat: 22.3662, lng: 114.0558, score: 8.0, desc: '汲水門航道水流急，岸邊礫石區常有大石九公與火點。' },
+          { id: 17, name: '沙頭角鹿頸海岸', region: '新界', type: '手竿/沉底', lat: 22.5288, lng: 114.2185, score: 8.3, desc: '紅樹林與紅石交界，潮差明顯，黃腳立與芒頭魚熱點。' },
+          { id: 18, name: '大埔三門仔碼頭', region: '新界', type: '波釣/前打', lat: 22.4580, lng: 114.2085, score: 8.4, desc: '鄰近魚排區，水質營養豐富，常有脫逃魚隻及大立魚聚集。' },
+
+          // --- 離島區 ---
+          { id: 19, name: '果洲群島外礁', region: '離島', type: '艇釣/磯釣', lat: 22.2667, lng: 114.3667, score: 9.7, desc: '香港頂級大物磯場，外海風浪大，產巨型黑立、紅鮪及石斑。' },
+          { id: 20, name: '東龍島白燈塔', region: '離島', type: '磯釣/遠投', lat: 22.2512, lng: 114.2985, score: 9.3, desc: '水質頂級，水深水急，磯釣天堂，常見斑類、立魚及魷魚。' },
+          { id: 21, name: '長洲公眾碼頭 (西灣邊)', region: '離島', type: '前打/沉底', lat: 22.2078, lng: 114.0282, score: 8.1, desc: '水質清澈，船隻停泊區樁柱多，為前打尋找石斑佳處。' },
+          { id: 22, name: '南丫島榕樹灣防波堤', region: '離島', type: '磯釣/投釣', lat: 22.2265, lng: 114.1105, score: 8.7, desc: '防波堤消波塊堆疊形成豐富消波縫，產大泥鯭及黃腳立。' },
+          { id: 23, name: '大澳新基大橋外灣', region: '離島', type: '沉底/路亞', lat: 22.2552, lng: 113.8638, score: 8.2, desc: '咸淡水交界區，河口生物豐富，黃腳立與鱸魚極度活躍。' },
+          { id: 24, name: '蒲台島南角咀', region: '離島', type: '重磯釣/大物', lat: 22.1635, lng: 114.2582, score: 9.5, desc: '香港最南端外礁，迎浪水急，水深極深，產紅鮪及大型紅斑。' },
+          { id: 25, name: '坪洲東灣海濱', region: '離島', type: '投釣/遠投', lat: 22.2852, lng: 114.0412, score: 7.9, desc: '環境安寧，灘角石礁交界，適合清晨及黃昏遠投尋找立魚。' }
         ]);
 
+        // 魚類資料
         const fishes = ref([
           { id: 1, name: '黑棘鯛', localName: '黑立 / 黑鯛', toxic: false, habitat: '沿岸、碼頭、防波堤', method: '前打、磯釣、沉底', releaseSize: '15 cm', tip: '背鰭非常硬，抓取時需注意防扎。咬口謹慎，拉力強勁。' },
           { id: 2, name: '黃腳鯛', localName: '黃腳立', toxic: false, habitat: '河口、沙泥底、內灣', method: '沉底、前打、路亞', releaseSize: '15 cm', tip: '喜歡在沙泥底覓食蝦蟹，肉質鮮美，極受釣友歡迎。' },
@@ -200,13 +226,16 @@
           { id: 9, name: '白線斑紋蟾魚', localName: '老虎魚 / 獅子魚', toxic: true, habitat: '海底石縫、防波堤', method: '沉底誤釣', releaseSize: '不建議食用', tip: '🚨 鰭棘具強烈劇毒！誤釣切勿用手拿取，請直接剪斷魚線。' }
         ]);
 
+        // 計算過濾後的釣點
         const filteredSpots = computed(() => {
           return spots.value.filter(s => 
             s.name.includes(searchQuery.value) || 
-            s.region.includes(searchQuery.value)
+            s.region.includes(searchQuery.value) ||
+            s.type.includes(searchQuery.value)
           );
         });
 
+        // 計算過濾後的魚種
         const filteredFishes = computed(() => {
           return fishes.value.filter(f => 
             f.name.includes(fishSearchQuery.value) || 
@@ -215,6 +244,7 @@
           );
         });
 
+        // 取得潮汐數據
         const fetchTideData = async () => {
           try {
             const res = await fetch('/api/tide');
@@ -227,35 +257,81 @@
           }
         };
 
-        const initMap = () => {
-          if (map) return;
-          map = L.map('map-container').setView([22.35, 114.18], 11);
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
-          
-          spots.value.forEach(spot => {
+        // 重新繪製地圖標記
+        const updateMapMarkers = () => {
+          if (!map) return;
+          if (markersGroup) {
+            markersGroup.clearLayers();
+          } else {
+            markersGroup = L.layerGroup().addTo(map);
+          }
+
+          filteredSpots.value.forEach(spot => {
             const popupContent = `
-              <div style="color: #0f172a;">
-                <b style="font-size: 14px;">${spot.name}</b><br>
-                <span style="font-size: 12px; color: #475569;">${spot.region} · ${spot.type}</span><br>
-                <span style="font-size: 12px; font-weight: bold; color: #059669;">咬口指數: ${spot.score}/10</span>
+              <div style="color: #0f172a; min-width: 160px;">
+                <b style="font-size: 14px; color: #0284c7;">${spot.name}</b><br>
+                <span style="font-size: 12px; color: #475569;"><i class="fa-solid fa-location-dot"></i> ${spot.region} · ${spot.type}</span><br>
+                <div style="margin-top: 4px; font-size: 12px; font-weight: bold; color: #059669;">
+                  咬口指數: ${spot.score}/10
+                </div>
+                <p style="margin-top: 4px; font-size: 11px; color: #334155;">${spot.desc}</p>
               </div>
             `;
-            L.marker([spot.lat, spot.lng]).addTo(map).bindPopup(popupContent);
+            const marker = L.marker([spot.lat, spot.lng]).bindPopup(popupContent);
+            markersGroup.addLayer(marker);
           });
         };
 
+        // 初始化 Leaflet 地圖
+        const initMap = () => {
+          if (map) return;
+          map = L.map('map-container').setView([22.35, 114.18], 11);
+          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; OpenStreetMap'
+          }).addTo(map);
+          
+          updateMapMarkers();
+        };
+
+        // 點擊清單項目聚焦地圖
         const focusSpot = (spot) => {
           if (map) {
-            map.setView([spot.lat, spot.lng], 14);
+            map.setView([spot.lat, spot.lng], 14, { animate: true });
+            // 尋找並自動開啟彈出視窗
+            if (markersGroup) {
+              markersGroup.eachLayer(layer => {
+                const latLng = layer.getLatLng();
+                if (Math.abs(latLng.lat - spot.lat) < 0.0001 && Math.abs(latLng.lng - spot.lng) < 0.0001) {
+                  layer.openPopup();
+                }
+              });
+            }
           }
         };
 
+        // 搜尋過濾時同步更新地圖標記
+        watch(filteredSpots, () => {
+          updateMapMarkers();
+        });
+
+        // 頁面載入觸發
         onMounted(() => {
           fetchTideData();
           setTimeout(() => initMap(), 300);
         });
 
-        return { currentTab, searchQuery, fishSearchQuery, spots, filteredSpots, fishes, filteredFishes, focusSpot, tideList, fetchTideData };
+        return { 
+          currentTab, 
+          searchQuery, 
+          fishSearchQuery, 
+          spots, 
+          filteredSpots, 
+          fishes, 
+          filteredFishes, 
+          focusSpot, 
+          tideList, 
+          fetchTideData 
+        };
       }
     }).mount('#app');
   </script>
