@@ -24,7 +24,7 @@
         </div>
         
         <nav class="flex space-x-6 text-sm font-medium">
-          <button @click="currentTab = 'map'" :class="currentTab==='map'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">釣點地圖</button>
+          <button @click="currentTab = 'map'" :class="currentTab==='map'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">全港釣點地圖</button>
           <button @click="currentTab = 'tide'" :class="currentTab==='tide'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">天文台潮汐</button>
           <button @click="currentTab = 'ai'" :class="currentTab==='ai'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">AI 魚種辨識</button>
         </nav>
@@ -38,18 +38,21 @@
     <!-- 主要內容區 -->
     <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
 
-      <!-- 1. 釣點地圖 -->
+      <!-- 1. 全港釣點地圖 -->
       <section v-show="currentTab === 'map'" class="space-y-4">
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-wrap gap-3 items-center justify-between">
           <div class="flex items-center space-x-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 flex-1 max-w-md">
             <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-            <input v-model="searchQuery" type="text" placeholder="搜尋釣點（西貢、青衣、東龍島）..." class="bg-transparent text-sm focus:outline-none w-full text-white">
+            <input v-model="searchQuery" type="text" placeholder="搜尋釣點（例如：西貢、石澳、青衣、東龍島）..." class="bg-transparent text-sm focus:outline-none w-full text-white">
+          </div>
+          <div class="text-xs text-slate-400">
+            已載入 <span class="text-cyan-400 font-bold">{{ filteredSpots.length }}</span> 個全港精選釣點
           </div>
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div class="lg:col-span-2 bg-slate-800 h-[500px] rounded-xl border border-slate-700 overflow-hidden relative z-0" id="map-container"></div>
-          <div class="space-y-3 overflow-y-auto max-h-[500px] pr-1">
+          <div class="lg:col-span-2 bg-slate-800 h-[520px] rounded-xl border border-slate-700 overflow-hidden relative z-0" id="map-container"></div>
+          <div class="space-y-3 overflow-y-auto max-h-[520px] pr-1">
             <div v-for="spot in filteredSpots" :key="spot.id" @click="focusSpot(spot)" class="bg-slate-800 p-4 rounded-xl border border-slate-700 hover:border-cyan-500/50 cursor-pointer transition">
               <div class="flex justify-between items-start">
                 <div>
@@ -72,7 +75,7 @@
           <div class="flex justify-between items-center mb-6">
             <div>
               <h3 class="text-xl font-bold">香港即時潮汐預報（天文台數據）</h3>
-              <p class="text-xs text-slate-400 mt-1">數據將自動同步香港天文台 API，為釣友提供高潮、低潮及咬口時間點。</p>
+              <p class="text-xs text-slate-400 mt-1">數據自動同步香港天文台 API，提供高潮、低潮及咬口指數。</p>
             </div>
             <button @click="fetchTideData" class="bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg text-xs font-bold transition">
               <i class="fa-solid fa-rotate mr-1"></i> 重新整理
@@ -119,19 +122,43 @@
 
     createApp({
       setup() {
-        const currentTab = ref('tide');
+        const currentTab = ref('map');
         const searchQuery = ref('');
         const tideList = ref([]);
         let map = null;
 
+        // 全港 15 大精選釣點數據
         const spots = ref([
-          { id: 1, name: '西貢北潭涌碼頭', region: '西貢', type: '磯釣', lat: 22.3965, lng: 114.3182, score: 9.2, desc: '水質極佳，適合波釣法，潮水動時咬口旺。' },
-          { id: 2, name: '青衣大橋海濱', region: '葵青', type: '投釣', lat: 22.3551, lng: 114.1102, score: 8.5, desc: '水深流急，夜釣熱點，交通便利。' },
-          { id: 3, name: '果洲群島外礁', region: '離島', type: '船釣', lat: 22.2667, lng: 114.3667, score: 9.6, desc: '專業磯釣/艇釣大物場，水流湍急。' }
+          // 港島區
+          { id: 1, name: '中環十號碼頭 / 海濱長廊', region: '港島', type: '投釣/假餌', lat: 22.2872, lng: 114.1610, score: 7.8, desc: '交通極便利，夜晚光線充足，常見黑立、魷魚及鱸魚。' },
+          { id: 2, name: '北角海濱長廊 (東岸公園)', region: '港島', type: '沉底/投釣', lat: 22.2905, lng: 114.1925, score: 7.5, desc: '水流平穩，適合新手，近岸常見泥鯭、石九公及小黑立。' },
+          { id: 3, name: '石澳大頭洲磯場', region: '港島', type: '磯釣', lat: 22.2302, lng: 114.2588, score: 8.8, desc: '外海水流湍急，岩石地形複雜，白立、黑立及大火口熱點。' },
+          { id: 4, name: '赤柱卜公碼頭', region: '港島', type: '波釣/前打', lat: 22.2185, lng: 114.2120, score: 8.2, desc: '水質清澈，水深足夠，適合前打法尋找石斑及細鱗。' },
+
+          // 九龍區
+          { id: 5, name: '觀塘海濱長廊', region: '九龍', type: '投釣/路亞', lat: 22.3115, lng: 114.2212, score: 7.2, desc: '市區近郊方便夜釣，秋冬季節常有大魷魚及石九公上鉤。' },
+          { id: 6, name: '尖沙咀天星碼頭側', region: '九龍', type: '沉底', lat: 22.2937, lng: 114.1685, score: 7.0, desc: '水深流急，底棲魚類多，需注意渡輪航道與遊人。' },
+          { id: 7, name: '鯉魚門三家村渡輪碼頭', region: '九龍', type: '磯釣/前打', lat: 22.2878, lng: 114.2381, score: 8.5, desc: '航道交界水流極快，石縫多，產大口立、石斑及紅鮪。' },
+
+          // 新界區
+          { id: 8, name: '西貢北潭涌碼頭', region: '新界', type: '磯釣/波釣', lat: 22.3965, lng: 114.3182, score: 9.2, desc: '水質極佳，水深平穩，適合波釣法，潮水動時咬口極旺。' },
+          { id: 9, name: '青衣大橋海濱 (青衣南)', region: '新界', type: '投釣/遠投', lat: 22.3551, lng: 114.1102, score: 8.6, desc: '航道水深流急，夜釣熱點，常有大花立、石斑及黑立。' },
+          { id: 10, name: '屯門碼頭海濱長廊', region: '新界', type: '遠投/沉底', lat: 22.3718, lng: 113.9658, score: 8.0, desc: '沙石底地形，適合遠投，秋季常見沙鑽、黃腳立及烏頭。' },
+          { id: 11, name: '馬鞍山烏溪沙沙灘/石堤', region: '新界', type: '假餌/路亞', lat: 22.4278, lng: 114.2325, score: 8.1, desc: '淺灘與石堆交界，晨昏時段極多路亞玩家釣鱸魚及針魚。' },
+          { id: 12, name: '荃灣海濱公園', region: '新界', type: '沉底/手竿', lat: 22.3662, lng: 114.1130, score: 7.3, desc: '近岸水平浪靜，交通極便利，適合親子手竿釣泥鯭及鯔魚。' },
+
+          // 離島區
+          { id: 13, name: '果洲群島外礁 (北果洲)', region: '離島', type: '艇釣/磯釣', lat: 22.2667, lng: 114.3667, score: 9.7, desc: '香港頂級大物磯場，外海風浪大，產巨型黑立、紅鮪及石斑。' },
+          { id: 14, name: '東龍島南堂碼頭/白燈塔', region: '離島', type: '磯釣/遠投', lat: 22.2512, lng: 114.2985, score: 9.3, desc: '水質頂級，水深水急，磯釣天堂，常見斑類、立魚及魷魚。' },
+          { id: 15, name: '長洲西堤道/公眾碼頭', region: '離島', type: '前打/沉底', lat: 22.2082, lng: 114.0250, score: 8.4, desc: '避風塘水域，底棲資源豐富，常有黃腳立、細鱗及連尖。' }
         ]);
 
         const filteredSpots = computed(() => {
-          return spots.value.filter(s => s.name.includes(searchQuery.value) || s.region.includes(searchQuery.value));
+          return spots.value.filter(s => 
+            s.name.includes(searchQuery.value) || 
+            s.region.includes(searchQuery.value) ||
+            s.type.includes(searchQuery.value)
+          );
         });
 
         const fetchTideData = async () => {
@@ -150,18 +177,28 @@
           if (map) return;
           map = L.map('map-container').setView([22.35, 114.18], 11);
           L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+          
           spots.value.forEach(spot => {
-            L.marker([spot.lat, spot.lng]).addTo(map).bindPopup(`<b>${spot.name}</b>`);
+            const popupContent = `
+              <div style="color: #0f172a;">
+                <b style="font-size: 14px;">${spot.name}</b><br>
+                <span style="font-size: 12px; color: #475569;">${spot.region} · ${spot.type}</span><br>
+                <span style="font-size: 12px; font-weight: bold; color: #059669;">咬口指數: ${spot.score}/10</span>
+              </div>
+            `;
+            L.marker([spot.lat, spot.lng]).addTo(map).bindPopup(popupContent);
           });
         };
 
         const focusSpot = (spot) => {
-          map.setView([spot.lat, spot.lng], 14);
+          if (map) {
+            map.setView([spot.lat, spot.lng], 14);
+          }
         };
 
         onMounted(() => {
           fetchTideData();
-          setTimeout(() => initMap(), 500);
+          setTimeout(() => initMap(), 300);
         });
 
         return { currentTab, searchQuery, spots, filteredSpots, focusSpot, tideList, fetchTideData };
