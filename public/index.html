@@ -99,12 +99,12 @@
         </div>
       </section>
 
-      <!-- 3. 香港常見魚類 -->
+      <!-- 3. 香港常見魚類（20種） -->
       <section v-show="currentTab === 'fish'" class="space-y-6">
         <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-wrap gap-3 items-center justify-between">
           <div class="flex items-center space-x-2 bg-slate-900 px-3 py-2 rounded-lg border border-slate-700 flex-1 max-w-md">
             <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-            <input v-model="fishSearchQuery" type="text" placeholder="搜尋香港常見魚類（如：黑立、石斑、泥鯭）..." class="bg-transparent text-sm focus:outline-none w-full text-white">
+            <input v-model="fishSearchQuery" type="text" placeholder="搜尋香港常見魚類（如：黑立、石斑、泥鯭、坑鯰）..." class="bg-transparent text-sm focus:outline-none w-full text-white">
           </div>
           <div class="text-xs text-slate-400">
             收錄 <span class="text-cyan-400 font-bold">{{ filteredFishes.length }}</span> 種香港常見魚類
@@ -112,32 +112,34 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div v-for="fish in filteredFishes" :key="fish.id" class="bg-slate-800 p-5 rounded-xl border border-slate-700 hover:border-cyan-500/50 transition">
-            <div class="flex justify-between items-start border-b border-slate-700/60 pb-3">
-              <div>
-                <h4 class="font-bold text-lg text-white">{{ fish.name }}</h4>
-                <span class="text-xs text-slate-400">俗稱：{{ fish.localName }}</span>
+          <div v-for="fish in filteredFishes" :key="fish.id" class="bg-slate-800 p-5 rounded-xl border border-slate-700 hover:border-cyan-500/50 transition flex flex-col justify-between">
+            <div>
+              <div class="flex justify-between items-start border-b border-slate-700/60 pb-3">
+                <div>
+                  <h4 class="font-bold text-lg text-white">{{ fish.name }}</h4>
+                  <span class="text-xs text-slate-400">俗稱：{{ fish.localName }}</span>
+                </div>
+                <span v-if="fish.toxic" class="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold px-2 py-0.5 rounded">
+                  <i class="fa-solid fa-triangle-exclamation mr-1"></i>有毒性
+                </span>
+                <span v-else class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold px-2 py-0.5 rounded">
+                  無毒/可食用
+                </span>
               </div>
-              <span v-if="fish.toxic" class="bg-rose-500/20 text-rose-400 border border-rose-500/30 text-xs font-bold px-2 py-0.5 rounded">
-                <i class="fa-solid fa-triangle-exclamation mr-1"></i>有毒性
-              </span>
-              <span v-else class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 text-xs font-bold px-2 py-0.5 rounded">
-                無毒/可食用
-              </span>
-            </div>
 
-            <div class="mt-3 space-y-2 text-xs">
-              <div class="flex justify-between">
-                <span class="text-slate-400">常見棲息：</span>
-                <span class="text-slate-200 font-medium">{{ fish.habitat }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-slate-400">推薦釣法：</span>
-                <span class="text-cyan-400 font-medium">{{ fish.method }}</span>
-              </div>
-              <div class="flex justify-between">
-                <span class="text-slate-400">放生建議體長：</span>
-                <span class="text-amber-400 font-medium">&lt; {{ fish.releaseSize }}</span>
+              <div class="mt-3 space-y-2 text-xs">
+                <div class="flex justify-between">
+                  <span class="text-slate-400">常見棲息：</span>
+                  <span class="text-slate-200 font-medium">{{ fish.habitat }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">推薦釣法：</span>
+                  <span class="text-cyan-400 font-medium">{{ fish.method }}</span>
+                </div>
+                <div class="flex justify-between">
+                  <span class="text-slate-400">放生建議體長：</span>
+                  <span class="text-amber-400 font-medium">&lt; {{ fish.releaseSize }}</span>
+                </div>
               </div>
             </div>
 
@@ -177,24 +179,19 @@
         let map = null;
         let markersGroup = null;
 
-        // 全港多區釣點
+        // 全港 25 個釣點
         const spots = ref([
-          // --- 港島區 ---
           { id: 1, name: '中環十號碼頭 / 海濱長廊', region: '港島', type: '投釣/假餌', lat: 22.2872, lng: 114.1610, score: 7.8, desc: '交通極便利，夜晚光線充足，常見黑立、魷魚及鱸魚。' },
           { id: 2, name: '北角海濱長廊 (東岸公園)', region: '港島', type: '沉底/投釣', lat: 22.2905, lng: 114.1925, score: 7.5, desc: '水流平穩，適合新手，近岸常見泥鯭、石九公及小黑立。' },
           { id: 3, name: '石澳大頭洲磯場', region: '港島', type: '磯釣', lat: 22.2302, lng: 114.2588, score: 8.8, desc: '外海水流湍急，岩石地形複雜，白立、黑立及大火口熱點。' },
           { id: 4, name: '赤柱卜公碼頭', region: '港島', type: '波釣/前打', lat: 22.2185, lng: 114.2120, score: 8.2, desc: '水質清澈，水深足夠，適合前打法尋找石斑及細鱗。' },
           { id: 5, name: '西環鐘聲泳棚', region: '港島', type: '磯釣/前打', lat: 22.2858, lng: 114.1205, score: 8.4, desc: '水急石多，暗礁豐富，黑立與黃腳立喜棲息於近岸浪擊區。' },
           { id: 6, name: '柴灣貨物裝卸區碼頭', region: '港島', type: '沉底/投釣', lat: 22.2718, lng: 114.2442, score: 7.6, desc: '水深底質泥沙，秋冬季夜釣常有大花立及深水石九公上鉤。' },
-
-          // --- 九龍區 ---
           { id: 7, name: '觀塘海濱長廊', region: '九龍', type: '投釣/路亞', lat: 22.3115, lng: 114.2212, score: 7.2, desc: '市區近郊方便夜釣，秋冬季節常有大魷魚及石九公上鉤。' },
           { id: 8, name: '鯉魚門三家村渡輪碼頭', region: '九龍', type: '磯釣/前打', lat: 22.2878, lng: 114.2381, score: 8.5, desc: '航道交界水流極快，石縫多，產大口立、石斑及紅鮪。' },
           { id: 9, name: '尖沙咀天星碼頭 (舊海岸邊)', region: '九龍', type: '前打/路亞', lat: 22.2938, lng: 114.1685, score: 7.0, desc: '水深港寬，夜間燈光招引小魚，常有鱸魚及魷魚追餌。' },
           { id: 10, name: '啟德跑道公園海濱', region: '九龍', type: '投釣/沉底', lat: 22.3082, lng: 114.2155, score: 7.9, desc: '開闊開揚，底質豐富，適合長投尋找黑立與黃腳立。' },
           { id: 11, name: '紅磡海濱長廊 (渡輪碼頭旁)', region: '九龍', type: '沉底/前打', lat: 22.3005, lng: 114.1832, score: 7.3, desc: '近岸暗礁與防波堤交界，為石斑與泥鯭常駐區域。' },
-
-          // --- 新界區 ---
           { id: 12, name: '西貢北潭涌碼頭', region: '新界', type: '磯釣/波釣', lat: 22.3965, lng: 114.3182, score: 9.2, desc: '水質極佳，水深平穩，適合波釣法，潮水動時咬口極旺。' },
           { id: 13, name: '青衣大橋海濱 (青衣南)', region: '新界', type: '投釣/遠投', lat: 22.3551, lng: 114.1102, score: 8.6, desc: '航道水深流急，夜釣熱點，常有大花立、石斑及黑立。' },
           { id: 14, name: '屯門蝴蝶灣防波堤', region: '新界', type: '遠投/磯釣', lat: 22.3712, lng: 113.9550, score: 8.1, desc: '位於珠江口交界，水質混濁但食物豐富，產大型黃腳立與鱸魚。' },
@@ -202,8 +199,6 @@
           { id: 16, name: '深井釣魚灣', region: '新界', type: '遠投/沉底', lat: 22.3662, lng: 114.0558, score: 8.0, desc: '汲水門航道水流急，岸邊礫石區常有大石九公與火點。' },
           { id: 17, name: '沙頭角鹿頸海岸', region: '新界', type: '手竿/沉底', lat: 22.5288, lng: 114.2185, score: 8.3, desc: '紅樹林與紅石交界，潮差明顯，黃腳立與芒頭魚熱點。' },
           { id: 18, name: '大埔三門仔碼頭', region: '新界', type: '波釣/前打', lat: 22.4580, lng: 114.2085, score: 8.4, desc: '鄰近魚排區，水質營養豐富，常有脫逃魚隻及大立魚聚集。' },
-
-          // --- 離島區 ---
           { id: 19, name: '果洲群島外礁', region: '離島', type: '艇釣/磯釣', lat: 22.2667, lng: 114.3667, score: 9.7, desc: '香港頂級大物磯場，外海風浪大，產巨型黑立、紅鮪及石斑。' },
           { id: 20, name: '東龍島白燈塔', region: '離島', type: '磯釣/遠投', lat: 22.2512, lng: 114.2985, score: 9.3, desc: '水質頂級，水深水急，磯釣天堂，常見斑類、立魚及魷魚。' },
           { id: 21, name: '長洲公眾碼頭 (西灣邊)', region: '離島', type: '前打/沉底', lat: 22.2078, lng: 114.0282, score: 8.1, desc: '水質清澈，船隻停泊區樁柱多，為前打尋找石斑佳處。' },
@@ -213,17 +208,28 @@
           { id: 25, name: '坪洲東灣海濱', region: '離島', type: '投釣/遠投', lat: 22.2852, lng: 114.0412, score: 7.9, desc: '環境安寧，灘角石礁交界，適合清晨及黃昏遠投尋找立魚。' }
         ]);
 
-        // 魚類資料
+        // 20 種香港常見魚類
         const fishes = ref([
-          { id: 1, name: '黑棘鯛', localName: '黑立 / 黑鯛', toxic: false, habitat: '沿岸、碼頭、防波堤', method: '前打、磯釣、沉底', releaseSize: '15 cm', tip: '背鰭非常硬，抓取時需注意防扎。咬口謹慎，拉力強勁。' },
-          { id: 2, name: '黃腳鯛', localName: '黃腳立', toxic: false, habitat: '河口、沙泥底、內灣', method: '沉底、前打、路亞', releaseSize: '15 cm', tip: '喜歡在沙泥底覓食蝦蟹，肉質鮮美，極受釣友歡迎。' },
-          { id: 3, name: '紫黃腳鯛', localName: '白立', toxic: false, habitat: '外海磯場、水流急處', method: '浮游磯釣', releaseSize: '20 cm', tip: '喜棲息於沖浪區，爆發力極強，是磯釣代表性魚種。' },
-          { id: 4, name: '斜帶石斑魚', localName: '青斑', toxic: false, habitat: '魚排、碼頭樁柱、暗礁', method: '前打、活餌沉底', releaseSize: '25 cm', tip: '中鉤後會體會立刻鑽入石縫（鑽洞），需快速拉離海底。' },
-          { id: 5, name: '褐籃子魚', localName: '泥鯭', toxic: true, habitat: '近岸淺水、碼頭邊', method: '手竿、泥鯭鉤', releaseSize: '10 cm', tip: '⚠️ 背鰭、腹鰭棘條有毒，扎傷會引起劇痛，解鉤時請用鉗子。' },
-          { id: 6, name: '六斑九刺鮨', localName: '石九公', toxic: false, habitat: '防波堤石縫、岩礁底', method: '根釣 (HRF)、穴釣', releaseSize: '10 cm', tip: '貪吃且極易上鉤，新手入門最佳對象魚。' },
-          { id: 7, name: '日本真鱸', localName: '鱸魚 / 花鱸', toxic: false, habitat: '河口交界、橋墩附近', method: '路亞 (米諾/VIB)', releaseSize: '30 cm', tip: '掠食性強，中鉤後會頻繁洗鰓（躍出水面甩鉤）。' },
-          { id: 8, name: '紫斑軟絲', localName: '魷魚 / 火火箭仔', toxic: false, habitat: '碼頭燈下、清澈水域', method: 'Egi (木蝦釣法)', releaseSize: '10 cm (胴長)', tip: '秋冬季節常在夜間聚集於有燈光的碼頭邊。' },
-          { id: 9, name: '白線斑紋蟾魚', localName: '老虎魚 / 獅子魚', toxic: true, habitat: '海底石縫、防波堤', method: '沉底誤釣', releaseSize: '不建議食用', tip: '🚨 鰭棘具強烈劇毒！誤釣切勿用手拿取，請直接剪斷魚線。' }
+          { id: 1, name: '黑棘鯛', localName: '黑立 / 黑鯛', toxic: false, habitat: '沿岸、碼頭、防波堤', method: '前打、磯釣、沉底', releaseSize: '15 cm', tip: '背鰭堅硬警惕性高。警覺性強，拉力極佳，為釣魚熱門標的。' },
+          { id: 2, name: '黃腳鯛', localName: '黃腳立', toxic: false, habitat: '河口、沙泥底、內灣', method: '沉底、前打、路亞', releaseSize: '15 cm', tip: '鰭條呈鮮黃色，喜於沙泥底覓食蝦蟹，肉質極為鮮美。' },
+          { id: 3, name: '紫黃腳鯛', localName: '白立', toxic: false, habitat: '外海磯場、水流急處', method: '浮游磯釣', releaseSize: '20 cm', tip: '喜棲息於沖浪湧水區，中鉤後爆發力驚人。' },
+          { id: 4, name: '斜帶石斑魚', localName: '青斑', toxic: false, habitat: '魚排、碼頭樁柱、暗礁', method: '前打、活餌沉底', releaseSize: '25 cm', tip: '中鉤後會立刻鑽入石縫（鑽洞），需快速強行拉離海底。' },
+          { id: 5, name: '褐籃子魚', localName: '泥鯭', toxic: true, habitat: '近岸淺水、碼頭邊', method: '手竿、泥鯭鉤', releaseSize: '10 cm', tip: '⚠️ 背鰭、腹鰭棘條具毒腺，扎傷會引致劇痛紅腫，解鉤請用鉗子。' },
+          { id: 6, name: '六斑九刺鮨', localName: '石九公 / 石狗公', toxic: true, habitat: '防波堤石縫、岩礁底', method: '根釣 (HRF)、穴釣', releaseSize: '10 cm', tip: '⚠️ 頭部及背鰭刺帶微毒。極為貪吃，新手入門最易上鉤之魚種。' },
+          { id: 7, name: '日本真鱸', localName: '鱸魚 / 花鱸', toxic: false, habitat: '河口交界、橋墩附近', method: '路亞 (米諾/VIB)', releaseSize: '30 cm', tip: '掠食性強，中鉤後會頻繁洗鰓躍出水面甩鉤。' },
+          { id: 8, name: '紫斑軟絲', localName: '魷魚 / 火箭仔', toxic: false, habitat: '碼頭燈下、清澈水域', method: 'Egi (木蝦釣法)', releaseSize: '10 cm (胴長)', tip: '秋冬季節夜間常聚集於燈光碼頭邊，抽木蝦誘釣極受歡迎。' },
+          { id: 9, name: '斑紋蟾魚', localName: '老虎魚', toxic: true, habitat: '海底石縫、防波堤', method: '沉底誤釣', releaseSize: '不建議食用', tip: '🚨 鰭棘具強烈劇毒！誤釣切勿用手拿取，請直接剪斷魚線拋棄。' },
+          { id: 10, name: '線紋條條鯰', localName: '坑鯰 / 坑鰜', toxic: true, habitat: '泥沙底、河口、碼頭', method: '沉底、手竿', releaseSize: '不建議食用', tip: '🚨 胸鰭及背鰭三根刺含劇毒！被刺中會引致持續數小時劇烈劇痛。' },
+          { id: 11, name: '花身鯻', localName: '花身雞魚 / 釘公', toxic: false, habitat: '沙灘、河口、沙泥底', method: '遠投、沉底', releaseSize: '12 cm', tip: '身體帶黑色縱條紋，離水時鰾會發出「咕咕」聲音，鰓蓋邊緣尖銳。' },
+          { id: 12, name: '牛鰍', localName: '平頭魚', toxic: false, habitat: '沙泥底、海岸沿岸', method: '沉底、路亞假餌', releaseSize: '20 cm', tip: '頭部極度扁平，常伏於泥沙伏擊小魚，解鉤需小心兩側頭棘。' },
+          { id: 13, name: '星點裸胸鱔', localName: '油槌 / 海鱔', toxic: false, habitat: '暗礁石縫、防波堤深處', method: '夜釣沉底 (鋼絲仕掛)', releaseSize: '30 cm', tip: '牙齒極度鋒利且帶細菌，會纏繞釣線，絕不能直接用手抓取。' },
+          { id: 14, name: '紫印星斑', localName: '東星斑 / 紅斑', toxic: false, habitat: '深水外礁、清澈海域', method: '船釣、重磯', releaseSize: '30 cm', tip: '高級食用石斑，魚體呈鮮紅或橘紅色帶藍點，拉力巨大。' },
+          { id: 15, name: '大眼鯛', localName: '大眼雞 / 木棉', toxic: false, habitat: '夜間近岸、深水礁石', method: '夜釣沉底', releaseSize: '15 cm', tip: '眼睛巨大呈鮮紅色，皮厚易剝，為香港傳統打冷冷盤魚首選。' },
+          { id: 16, name: '星斑叉尾鮰', localName: '沙鯭', toxic: false, habitat: '淺海岩礁、海草區', method: '沉底、細鉤小餌', releaseSize: '12 cm', tip: '皮粗如沙紙，嘴小但會偷餌，頭頂有一根可鎖定的堅硬背棘。' },
+          { id: 17, name: '銀䱛', localName: '黃花魚 / 石首魚', toxic: false, habitat: '咸淡水交界、河口', method: '沉底、長投', releaseSize: '15 cm', tip: '腹部呈現天然金黃色，肉質呈蒜瓣狀，細嫩鮮美。' },
+          { id: 18, name: '紅衫魚', localName: '金線魚', toxic: false, habitat: '較深水沙泥底', method: '船釣、遠投', releaseSize: '15 cm', tip: '體表帶黃色縱帶，尾鰭上葉延伸成絲狀，平民香煎名魚。' },
+          { id: 19, name: '鯔魚', localName: '烏頭', toxic: false, habitat: '內灣、河口、咸淡水', method: '浮波釣法、吐司餌', releaseSize: '20 cm', tip: '油脂極其豐富，常用於檸檬蒸烏頭或鹽醃烘烤。' },
+          { id: 20, name: '紋腹叉鼻魨', localName: '雞泡魚 / 河豚', toxic: true, habitat: '全港沿岸、碼頭', method: '沉底誤釣', releaseSize: '不可食用', tip: '🚨 內臟與血液具劇烈河豚毒素！咬合力極強能咬斷魚鉤，切勿食用。' }
         ]);
 
         // 計算過濾後的釣點
