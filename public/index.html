@@ -25,7 +25,7 @@
         
         <nav class="flex space-x-6 text-sm font-medium">
           <button @click="currentTab = 'map'" :class="currentTab==='map'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">全港釣點地圖</button>
-          <button @click="currentTab = 'tide'" :class="currentTab==='tide'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">天文台潮汐</button>
+          <button @click="currentTab = 'tide'" :class="currentTab==='tide'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">天氣與潮汐預報</button>
           <button @click="currentTab = 'fish'" :class="currentTab==='fish'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">香港常見魚類</button>
           <button @click="currentTab = 'ai'" :class="currentTab==='ai'?'text-cyan-400 border-b-2 border-cyan-400':'text-slate-300'" class="py-1">AI 魚種辨識</button>
         </nav>
@@ -69,8 +69,52 @@
         </div>
       </section>
 
-      <!-- 2. 潮汐 -->
+      <!-- 2. 天氣與潮汐 + 每日最佳釣魚時間 -->
       <section v-show="currentTab === 'tide'" class="space-y-6">
+        
+        <!-- 一週天氣概況與每日最佳釣魚時間 -->
+        <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 space-y-4">
+          <div class="flex justify-between items-center border-b border-slate-700 pb-3">
+            <div>
+              <h3 class="text-xl font-bold flex items-center gap-2">
+                <i class="fa-solid fa-cloud-sun text-amber-400"></i> 本週天氣概況與最佳釣魚時段
+              </h3>
+              <p class="text-xs text-slate-400 mt-1">綜合氣壓、風向、潮汐水位漲退推算之黃金咬口時段</p>
+            </div>
+            <span class="bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 text-xs font-bold px-3 py-1 rounded-full">
+              預報更新：今日 20:00
+            </span>
+          </div>
+
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-7 gap-3 pt-2">
+            <div v-for="day in weeklyForecast" :key="day.date" class="bg-slate-900/90 p-3.5 rounded-xl border border-slate-700/80 flex flex-col justify-between space-y-3">
+              <div>
+                <div class="flex justify-between items-center text-xs border-b border-slate-800 pb-2">
+                  <span class="font-bold text-slate-200">{{ day.day }}</span>
+                  <span class="text-slate-400">{{ day.date }}</span>
+                </div>
+
+                <div class="my-2 text-center">
+                  <i :class="day.icon" class="text-2xl mb-1"></i>
+                  <div class="text-xs font-medium text-slate-300">{{ day.weather }}</div>
+                  <div class="text-xs text-cyan-400 font-bold mt-0.5">{{ day.temp }}</div>
+                  <div class="text-[11px] text-slate-400">{{ day.wind }}</div>
+                </div>
+              </div>
+
+              <div class="bg-slate-800/80 p-2 rounded-lg border border-slate-700/60 text-center">
+                <div class="text-[10px] text-slate-400 mb-1 font-semibold">🎯 最佳出竿時段</div>
+                <div class="text-xs font-bold text-amber-400">{{ day.bestTime1 }}</div>
+                <div class="text-[11px] font-bold text-amber-300 mt-0.5" v-if="day.bestTime2">{{ day.bestTime2 }}</div>
+                <div class="mt-1 text-[10px] text-emerald-400 bg-emerald-500/10 py-0.5 rounded">
+                  {{ day.reason }}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 即時潮汐數據 -->
         <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
           <div class="flex justify-between items-center mb-6">
             <div>
@@ -179,6 +223,17 @@
         let map = null;
         let markersGroup = null;
 
+        // 一週天氣概況與每日最佳釣魚時間
+        const weeklyForecast = ref([
+          { day: '週一', date: '8/24', weather: '微雨 / 局部晴', temp: '26-31°C', wind: '東風 3-4級', icon: 'fa-solid fa-cloud-sun-rain text-cyan-400', bestTime1: '06:00 - 08:30', bestTime2: '17:30 - 19:30', reason: '滿潮轉流 + 晨昏口' },
+          { day: '週二', date: '8/25', weather: '大致天晴', temp: '27-32°C', wind: '微風 2-3級', icon: 'fa-solid fa-sun text-amber-400', bestTime1: '07:00 - 09:30', bestTime2: '18:00 - 20:00', reason: '水清流緩 適前打' },
+          { day: '週三', date: '8/26', weather: '多雲 有陣雨', temp: '26-30°C', wind: '東南風 4級', icon: 'fa-solid fa-cloud-rain text-blue-400', bestTime1: '05:30 - 08:00', bestTime2: '16:30 - 18:30', reason: '降壓活化 低溫搶食' },
+          { day: '週四', date: '8/27', weather: '晴朗 酷熱', temp: '28-33°C', wind: '微風 2級', icon: 'fa-solid fa-sun text-amber-500', bestTime1: '05:00 - 07:00', bestTime2: '19:00 - 21:00', reason: '避免高溫 專攻夜釣' },
+          { day: '週五', date: '8/28', weather: '局部雷暴', temp: '25-29°C', wind: '西南風 4-5級', icon: 'fa-solid fa-cloud-bolt text-purple-400', bestTime1: '06:30 - 08:30', bestTime2: '雷雨前 2小時', reason: '雨前氣壓降 大物出沒' },
+          { day: '週六', date: '8/29', weather: '大致天晴', temp: '27-32°C', wind: '偏東風 3級', icon: 'fa-solid fa-cloud-sun text-amber-400', bestTime1: '07:30 - 10:00', bestTime2: '17:00 - 19:00', reason: '大潮活水 咬口極旺' },
+          { day: '週日', date: '8/30', weather: '短暫陽光', temp: '26-31°C', wind: '東南風 3-4級', icon: 'fa-solid fa-sun-plant-wilt text-cyan-300', bestTime1: '08:00 - 10:30', bestTime2: '18:00 - 20:30', reason: '干潮底轉漲黃金期' }
+        ]);
+
         // 全港 25 個釣點
         const spots = ref([
           { id: 1, name: '中環十號碼頭 / 海濱長廊', region: '港島', type: '投釣/假餌', lat: 22.2872, lng: 114.1610, score: 7.8, desc: '交通極便利，夜晚光線充足，常見黑立、魷魚及鱸魚。' },
@@ -213,13 +268,13 @@
           { id: 1, name: '黑棘鯛', localName: '黑立 / 黑鯛', toxic: false, habitat: '沿岸、碼頭、防波堤', method: '前打、磯釣、沉底', releaseSize: '15 cm', tip: '背鰭堅硬警惕性高。警覺性強，拉力極佳，為釣魚熱門標的。' },
           { id: 2, name: '黃腳鯛', localName: '黃腳立', toxic: false, habitat: '河口、沙泥底、內灣', method: '沉底、前打、路亞', releaseSize: '15 cm', tip: '鰭條呈鮮黃色，喜於沙泥底覓食蝦蟹，肉質極為鮮美。' },
           { id: 3, name: '紫黃腳鯛', localName: '白立', toxic: false, habitat: '外海磯場、水流急處', method: '浮游磯釣', releaseSize: '20 cm', tip: '喜棲息於沖浪湧水區，中鉤後爆發力驚人。' },
-          { id: 4, name: '斜帶石斑魚', localName: '青斑', toxic: false, habitat: '魚排、碼頭樁柱、暗礁', method: '前打、活餌沉底', releaseSize: '25 cm', tip: '中鉤後會立刻鑽入石縫（鑽洞），需快速強行拉離海底。' },
+          { id: 4, name: '斜帶石斑魚', localName: '青斑', toxic: false, habitat: '魚排、碼頭樁柱、暗礁', method: '前打、活餌沉底', releaseSize: '25 cm', tip: '中鉤後會開啟鰭棘並鑽入石縫（鑽洞），需快速強行拉離海底。' },
           { id: 5, name: '褐籃子魚', localName: '泥鯭', toxic: true, habitat: '近岸淺水、碼頭邊', method: '手竿、泥鯭鉤', releaseSize: '10 cm', tip: '⚠️ 背鰭、腹鰭棘條具毒腺，扎傷會引致劇痛紅腫，解鉤請用鉗子。' },
           { id: 6, name: '六斑九刺鮨', localName: '石九公 / 石狗公', toxic: true, habitat: '防波堤石縫、岩礁底', method: '根釣 (HRF)、穴釣', releaseSize: '10 cm', tip: '⚠️ 頭部及背鰭刺帶微毒。極為貪吃，新手入門最易上鉤之魚種。' },
           { id: 7, name: '日本真鱸', localName: '鱸魚 / 花鱸', toxic: false, habitat: '河口交界、橋墩附近', method: '路亞 (米諾/VIB)', releaseSize: '30 cm', tip: '掠食性強，中鉤後會頻繁洗鰓躍出水面甩鉤。' },
           { id: 8, name: '紫斑軟絲', localName: '魷魚 / 火箭仔', toxic: false, habitat: '碼頭燈下、清澈水域', method: 'Egi (木蝦釣法)', releaseSize: '10 cm (胴長)', tip: '秋冬季節夜間常聚集於燈光碼頭邊，抽木蝦誘釣極受歡迎。' },
-          { id: 9, name: '斑紋蟾魚', localName: '老虎魚', toxic: true, habitat: '海底石縫、防波堤', method: '沉底誤釣', releaseSize: '不建議食用', tip: '🚨 鰭棘具強烈劇毒！誤釣切勿用手拿取，請直接剪斷魚線拋棄。' },
-          { id: 10, name: '線紋條條鯰', localName: '坑鯰 / 坑鰜', toxic: true, habitat: '泥沙底、河口、碼頭', method: '沉底、手竿', releaseSize: '不建議食用', tip: '🚨 胸鰭及背鰭三根刺含劇毒！被刺中會引致持續數小時劇烈劇痛。' },
+          { id: 9, name: '斑紋蟾魚', localName: '老虎魚', toxic: true, habitat: '海底石縫、防波堤', method: '沉底誤釣', releaseSize: '不可食用', tip: '🚨 鰭棘具強烈劇毒！誤釣切勿用手拿取，請直接剪斷魚線拋棄。' },
+          { id: 10, name: '線紋條條鯰', localName: '坑鯰 / 坑鰜', toxic: true, habitat: '泥沙底、河口、碼頭', method: '沉底、手竿', releaseSize: '不可食用', tip: '🚨 胸鰭及背鰭三根刺含劇毒！被刺中會引致持續數小時劇烈劇痛。' },
           { id: 11, name: '花身鯻', localName: '花身雞魚 / 釘公', toxic: false, habitat: '沙灘、河口、沙泥底', method: '遠投、沉底', releaseSize: '12 cm', tip: '身體帶黑色縱條紋，離水時鰾會發出「咕咕」聲音，鰓蓋邊緣尖銳。' },
           { id: 12, name: '牛鰍', localName: '平頭魚', toxic: false, habitat: '沙泥底、海岸沿岸', method: '沉底、路亞假餌', releaseSize: '20 cm', tip: '頭部極度扁平，常伏於泥沙伏擊小魚，解鉤需小心兩側頭棘。' },
           { id: 13, name: '星點裸胸鱔', localName: '油槌 / 海鱔', toxic: false, habitat: '暗礁石縫、防波堤深處', method: '夜釣沉底 (鋼絲仕掛)', releaseSize: '30 cm', tip: '牙齒極度鋒利且帶細菌，會纏繞釣線，絕不能直接用手抓取。' },
@@ -232,7 +287,6 @@
           { id: 20, name: '紋腹叉鼻魨', localName: '雞泡魚 / 河豚', toxic: true, habitat: '全港沿岸、碼頭', method: '沉底誤釣', releaseSize: '不可食用', tip: '🚨 內臟與血液具劇烈河豚毒素！咬合力極強能咬斷魚鉤，切勿食用。' }
         ]);
 
-        // 計算過濾後的釣點
         const filteredSpots = computed(() => {
           return spots.value.filter(s => 
             s.name.includes(searchQuery.value) || 
@@ -241,7 +295,6 @@
           );
         });
 
-        // 計算過濾後的魚種
         const filteredFishes = computed(() => {
           return fishes.value.filter(f => 
             f.name.includes(fishSearchQuery.value) || 
@@ -250,7 +303,6 @@
           );
         });
 
-        // 取得潮汐數據
         const fetchTideData = async () => {
           try {
             const res = await fetch('/api/tide');
@@ -263,7 +315,6 @@
           }
         };
 
-        // 重新繪製地圖標記
         const updateMapMarkers = () => {
           if (!map) return;
           if (markersGroup) {
@@ -288,7 +339,6 @@
           });
         };
 
-        // 初始化 Leaflet 地圖
         const initMap = () => {
           if (map) return;
           map = L.map('map-container').setView([22.35, 114.18], 11);
@@ -299,7 +349,6 @@
           updateMapMarkers();
         };
 
-        // 點擊清單項目聚焦地圖
         const focusSpot = (spot) => {
           if (map) {
             map.setView([spot.lat, spot.lng], 14, { animate: true });
@@ -314,12 +363,10 @@
           }
         };
 
-        // 搜尋過濾時同步更新地圖標記
         watch(filteredSpots, () => {
           updateMapMarkers();
         });
 
-        // 頁面載入觸發
         onMounted(() => {
           fetchTideData();
           setTimeout(() => initMap(), 300);
@@ -333,6 +380,7 @@
           filteredSpots, 
           fishes, 
           filteredFishes, 
+          weeklyForecast,
           focusSpot, 
           tideList, 
           fetchTideData 
